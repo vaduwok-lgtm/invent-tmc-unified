@@ -4,7 +4,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Инвентаризация ТМЦ</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#175CD3">
@@ -2516,8 +2516,16 @@ function updateNomTotal(n){
                     rules[pid].forEach((_,uIdx)=>setRows(loc,pid,uIdx,[null]));
                     setCU(loc,pid,[]);
                 });
-                stdProducts.forEach(p=>setCU(loc,p.id,[]));
-                setCustomProducts(loc,[]);
+                stdProducts.forEach(p=>{
+                    getCU(loc,p.id).forEach(unit=>{unit.rows=[null];});
+                    setCU(loc,p.id,getCU(loc,p.id));
+                });
+                const customProducts=getCustomProducts(loc);
+                customProducts.forEach(cp=>{
+                    cp.rows=[null];
+                    (cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});
+                });
+                setCustomProducts(loc,customProducts);
             });
             document.getElementById('addProductFormWrap').innerHTML='';
             renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
