@@ -1628,10 +1628,14 @@
         delBtn.style.cssText='background:var(--red-light);border:none;color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
         delBtn.textContent='✖';
         delBtn.onclick=()=>{
-            let cps=getCustomProducts(currentLoc);
-            const ci=cps.findIndex(p=>p.id===pid);
-            if(ci!==-1){cps[ci].customUnits.splice(cuIdx,1);setCustomProducts(currentLoc,cps);}
-            refreshCustomCard(pid);
+            const unitLabel=(getCustomProducts(currentLoc).find(p=>p.id===pid)?.customUnits||[])[cuIdx]?.label||'пользовательскую единицу';
+            showConfirm(`Удалить «${unitLabel}»?`,()=>{
+                pushUndoSnapshot(`Удаление единицы «${unitLabel}»`);
+                let cps=getCustomProducts(currentLoc);
+                const ci=cps.findIndex(p=>p.id===pid);
+                if(ci!==-1){cps[ci].customUnits.splice(cuIdx,1);setCustomProducts(currentLoc,cps);}
+                refreshCustomCard(pid);
+            });
         };
         bHeader.appendChild(nameEl); bHeader.appendChild(delBtn); block.appendChild(bHeader);
         const rowsWrap=document.createElement('div');
@@ -1693,8 +1697,11 @@
             delBtn.style.cssText='background:var(--red-light);border:none;color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
             delBtn.textContent='✖';
             delBtn.onclick=()=>{
-                let cu=getCU(loc,pid);cu.splice(idx,1);setCU(loc,pid,cu);
-                refreshStdCard(pid,stdProducts.find(p=>p.id===pid),locationRules[loc]?.[pid]||[]);
+                showConfirm(`Удалить единицу «${label}»?`,()=>{
+                    pushUndoSnapshot(`Удаление единицы «${label}»`);
+                    let cu=getCU(loc,pid);cu.splice(idx,1);setCU(loc,pid,cu);
+                    refreshStdCard(pid,stdProducts.find(p=>p.id===pid),locationRules[loc]?.[pid]||[]);
+                });
             };
             bHeader.appendChild(nameEl); bHeader.appendChild(delBtn);
         } else { bHeader.appendChild(nameEl); bHeader.appendChild(subEl); }
@@ -1850,10 +1857,12 @@
         if(existing){existing.remove();return;}
         const form=document.createElement('div');
         form.className='custom-form';
-        form.innerHTML=`
+        const formToken=`${pid}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  form.autocomplete='off';
+  form.innerHTML=`
             <div class="custom-form-title">➕ Новая единица</div>
-            <input type="text" placeholder="Название (напр. коробка 10 кг)" id="cfLabel">
-            <input type="number" step="any" inputmode="decimal" placeholder="Сколько базовых единиц" id="cfCoef">
+            <input class="cf-label" type="text" name="unit-label-${formToken}" value="" autocomplete="off" placeholder="Название (напр. коробка 10 кг)">
+            <input class="cf-coef" type="number" name="unit-coef-${formToken}" value="" autocomplete="off" step="any" inputmode="decimal" placeholder="Сколько базовых единиц">
             <div class="custom-form-btns">
                 <button class="cf-save" id="cfSave">💾 Сохранить</button>
                 <button class="cf-cancel" id="cfCancel">Отмена</button>
@@ -1861,8 +1870,8 @@
         const footer=body.querySelector('.product-footer');
         body.insertBefore(form,footer);
         form.querySelector('#cfSave').onclick=()=>{
-            const label=form.querySelector('#cfLabel').value.trim();
-            const coef=parseFloat(form.querySelector('#cfCoef').value);
+            const label=form.querySelector('.cf-label').value.trim();
+            const coef=parseFloat(form.querySelector('.cf-coef').value);
             if(!label||isNaN(coef)||coef<=0){toast('⚠️ Введите корректные данные');return;}
             if(isForCustomProduct){
                 let cps=getCustomProducts(loc);
@@ -1875,7 +1884,9 @@
             }
         };
         form.querySelector('#cfCancel').onclick=()=>form.remove();
-        form.querySelector('#cfLabel').focus();
+        form.querySelector('.cf-label').value='';
+  form.querySelector('.cf-coef').value='';
+  form.querySelector('.cf-label').focus();
     }
 
     /* ════════════════════════════════
@@ -2491,17 +2502,42 @@ function updateNomTotal(n){
     /* ════════════════════════════════
        CLEAR / RESET INVENTORY
     ════════════════════════════════ */
+    function resetStoredInventoryCounts(locFilter){
+        const keys=[];
+        for(let i=0;i<localStorage.length;i++){
+            const key=localStorage.key(i);
+            if(!key)continue;
+            const inventoryKey=key.startsWith('inv_')||key.startsWith('cu_')||key.startsWith('cprods_');
+            if(!inventoryKey)continue;
+            if(locFilter!==undefined){
+                const belongs=key.startsWith(`inv_${locFilter}_`)||key.startsWith(`cu_${locFilter}_`)||key===`cprods_${locFilter}`;
+                if(!belongs)continue;
+            }
+            keys.push(key);
+        }
+        keys.forEach(key=>{
+            try{
+                const raw=localStorage.getItem(key);
+                if(key.startsWith('inv_')){localStorage.setItem(key,'[null]');return;}
+                const rows=JSON.parse(raw||'[]');
+                if(!Array.isArray(rows))return;
+                if(key.startsWith('cu_')){
+                    rows.forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+                }else{
+                    rows.forEach(product=>{
+                        if(!product||typeof product!=='object')return;
+                        product.rows=[null];
+                        (product.customUnits||[]).forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+                    });
+                }
+                localStorage.setItem(key,JSON.stringify(rows));
+            }catch(e){console.warn('Не удалось очистить запись инвентаризации',key,e);}
+        });
+    }
     function clearLocation(){
         showConfirm(`Очистить все данные для "${currentLoc}"?`,()=>{
             pushUndoSnapshot(`Очистка помещения «${currentLoc}»`);
-            const rules=locationRules[currentLoc]||{};
-            Object.keys(rules).forEach(pid=>{
-                rules[pid].forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
-                getCU(currentLoc,pid).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,pid,getCU(currentLoc,pid));
-            });
-            let cps=getCustomProducts(currentLoc);
-            cps.forEach(cp=>{cp.rows=[null];(cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});});
-            setCustomProducts(currentLoc,cps);
+            resetStoredInventoryCounts(currentLoc);
             document.getElementById('addProductFormWrap').innerHTML='';
             renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
             toast('🧹 Помещение очищено');
@@ -2510,23 +2546,7 @@ function updateNomTotal(n){
     function fullReset(){
         showConfirm('⚠️ Удалить ВСЕ данные по всем помещениям?',()=>{
             pushUndoSnapshot('Полный сброс инвентаризации');
-            locations.forEach(loc=>{
-                const rules=locationRules[loc]||{};
-                Object.keys(rules).forEach(pid=>{
-                    rules[pid].forEach((_,uIdx)=>setRows(loc,pid,uIdx,[null]));
-                    getCU(loc,pid).forEach(unit=>{unit.rows=[null];}); setCU(loc,pid,getCU(loc,pid));
-                });
-                stdProducts.forEach(p=>{
-                    getCU(loc,p.id).forEach(unit=>{unit.rows=[null];});
-                    setCU(loc,p.id,getCU(loc,p.id));
-                });
-                const customProducts=getCustomProducts(loc);
-                customProducts.forEach(cp=>{
-                    cp.rows=[null];
-                    (cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});
-                });
-                setCustomProducts(loc,customProducts);
-            });
+            resetStoredInventoryCounts();
             document.getElementById('addProductFormWrap').innerHTML='';
             renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
             if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
