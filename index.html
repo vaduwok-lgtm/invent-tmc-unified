@@ -2,25 +2,25 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#175CD3">
 <link rel="manifest" href="./manifest.json">
 <title>Инвентаризация — выбор режима</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f7f8fa;color:#101828;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
 header{height:58px;background:#fff;border-bottom:1px solid #e4e7ec;display:flex;align-items:center;padding:0 max(16px,calc((100vw - 760px)/2));font-weight:700}
-main{width:100%;max-width:760px;margin:0 auto;padding:36px 20px 50px}.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:700;color:#98a2b3;margin:0 0 10px}h1{font-size:28px;line-height:1.2;letter-spacing:-.04em;margin:0 0 9px}p{color:#667085;margin:0 0 24px}.cards{display:grid;gap:14px}
+main{width:100%;max-width:760px;margin:0 auto;padding:16px 20px 18px}.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:700;color:#98a2b3;margin:0 0 10px}h1{font-size:28px;line-height:1.2;letter-spacing:-.04em;margin:0 0 9px}p{color:#667085;margin:0 0 14px}.offline-note{font-size:13px;color:#175cd3;background:#eff4ff;border:1px solid #d1e0ff;border-radius:12px;padding:10px 12px;margin:0 0 16px}.cards{display:grid;gap:14px}
 a.card{position:relative;display:flex;flex-direction:column;text-decoration:none;color:inherit;background:#fff;border:1px solid #e4e7ec;border-radius:18px;padding:20px;box-shadow:0 1px 3px #10182812;transition:transform .12s,border-color .12s}
 a.card:active{transform:scale(.99);border-color:#175cd3}.icon{width:44px;height:44px;border-radius:14px;background:#eff4ff;color:#175cd3;display:grid;place-items:center;font-size:22px;font-weight:700;margin-bottom:15px}.title{font-weight:700;font-size:16px;margin-bottom:5px}.desc{font-size:13px;color:#667085;max-width:38em}.arrow{position:absolute;right:18px;top:50%;font-size:24px;color:#98a2b3}
 footer{margin-top:auto;text-align:center;color:#98a2b3;font-size:11px;padding:16px}
-@media(min-width:640px){main{padding-top:58px}.cards{grid-template-columns:1fr 1fr}a.card{min-height:195px}}
+@media(min-width:640px){main{padding-top:28px}.cards{grid-template-columns:1fr 1fr}a.card{min-height:195px}}
 </style>
 </head><body>
 <header>Инвентаризация ТМЦ</header>
-<main><div class="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО</div><h1>Что будем считать?</h1><p>Выберите режим. Данные каждого режима хранятся отдельно на этом устройстве.</p>
+<main><div class="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО</div><h1>Что будем считать?</h1><p>Выберите режим. Данные каждого режима хранятся отдельно на этом устройстве.</p><div class="offline-note">Офлайн-доступ появится после первого открытия приложения с интернетом.</div>
 <div class="cards">
 <a class="card" href="./audit.html"><span class="icon">₽</span><span class="title">Аудит и контрольный пересчёт</span><span class="desc">Деньги, сейф-пакеты и небольшой контрольный пересчёт товаров</span><span class="arrow">→</span></a>
 <a class="card" href="./inventory.html"><span class="icon">▤</span><span class="title">Полная инвентаризация</span><span class="desc">Полный список товаров, помещения, собственные позиции и итоги</span><span class="arrow">→</span></a>
-</div></main><footer>Офлайн-доступ появится после первого открытия с интернетом.</footer>
+</div></main><footer></footer>
 <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));</script>
 </body></html>
