@@ -1497,8 +1497,7 @@
         clrBtn.onclick=()=>{
             showConfirm(`Очистить "${product.name}"?`,()=>{
                 pushUndoSnapshot(`Очистка «${product.name}»`);
-                unitRules.forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
-                getCU(currentLoc,pid).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,pid,getCU(currentLoc,pid));
+                resetStoredProductCounts(currentLoc,pid);
                 refreshStdCard(pid,product,unitRules);
             });
         };
@@ -1546,9 +1545,7 @@
         clrBtn.onclick=()=>{
             showConfirm(`Очистить "${cp.name}"?`,()=>{
                 pushUndoSnapshot(`Очистка «${cp.name}»`);
-                let cps=getCustomProducts(currentLoc);
-                const idx=cps.findIndex(p=>p.id===pid);
-                if(idx!==-1){cps[idx].rows=[null];(cps[idx].customUnits||[]).forEach(unit=>{unit.rows=[null];});setCustomProducts(currentLoc,cps);}
+                resetStoredProductCounts(currentLoc,pid);
                 refreshCustomCard(pid);
             });
         };
@@ -2532,6 +2529,33 @@ function updateNomTotal(n){
                 }
                 localStorage.setItem(key,JSON.stringify(rows));
             }catch(e){console.warn('Не удалось очистить запись инвентаризации',key,e);}
+        });
+    }
+    function resetStoredProductCounts(loc,pid){
+        const unitKey=`cu_${loc}_${pid}`;
+        const customProductsKey=`cprods_${loc}`;
+        const rowPrefix=`inv_${loc}_${pid}_`;
+        const keys=[];
+        for(let i=0;i<localStorage.length;i++){
+            const key=localStorage.key(i);
+            if(key&&(key.startsWith(rowPrefix)||key===unitKey||key===customProductsKey))keys.push(key);
+        }
+        keys.forEach(key=>{
+            try{
+                if(key.startsWith('inv_')){localStorage.setItem(key,'[null]');return;}
+                const rows=JSON.parse(localStorage.getItem(key)||'[]');
+                if(!Array.isArray(rows))return;
+                if(key===unitKey){
+                    rows.forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+                }else{
+                    rows.forEach(product=>{
+                        if(!product||product.id!==pid)return;
+                        product.rows=[null];
+                        (product.customUnits||[]).forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+                    });
+                }
+                localStorage.setItem(key,JSON.stringify(rows));
+            }catch(e){console.warn('Не удалось очистить товар',pid,e);}
         });
     }
     function clearLocation(){
