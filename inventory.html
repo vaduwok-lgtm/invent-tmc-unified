@@ -1184,9 +1184,13 @@ function buildNewProductCard(n){
   addUnitBtn.onclick=()=>{
     const form=document.createElement('div');
     form.className='custom-form';
-    form.innerHTML='<div class="custom-form-title">➕ Новая фасовка</div><input type="text" placeholder="Название (например, коробка 10 кг)"><input type="number" step="any" inputmode="decimal" placeholder="Сколько базовых единиц"><div class="custom-form-btns"><button class="cf-save">💾 Сохранить</button><button class="cf-cancel">Отмена</button></div>';
+    form.autocomplete='off';
+    const formToken=`${code_}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    form.innerHTML='<div class="custom-form-title">➕ Новая фасовка</div><input type="text" name="nq-unit-label-'+formToken+'" value="" autocomplete="off" placeholder="Название (например, коробка 10 кг)"><input type="number" name="nq-unit-coef-'+formToken+'" value="" autocomplete="off" step="any" inputmode="decimal" placeholder="Сколько базовых единиц"><div class="custom-form-btns"><button class="cf-save">💾 Сохранить</button><button class="cf-cancel">Отмена</button></div>';
     body.insertBefore(form,footer);
     const inputs=form.querySelectorAll('input');
+    inputs[0].value='';
+    inputs[1].value='';
     form.querySelector('.cf-save').onclick=()=>{
       const label=inputs[0].value.trim();
       const coefficient=parseFloat(inputs[1].value);
@@ -1422,10 +1426,14 @@ function buildCPCustomUnitBlock(cp,cuIdx){
   delBtn.style.cssText='background:var(--danger-subtle);border:none;color:var(--danger);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
   delBtn.textContent='✖';
   delBtn.onclick=()=>{
-    let cps=getCustomProducts(currentLoc);
-    const ci=cps.findIndex(p=>p.id===pid);
-    if(ci!==-1){ cps[ci].customUnits.splice(cuIdx,1); setCustomProducts(currentLoc,cps); }
-    refreshCustomCard(pid);
+    const unitLabel=(getCustomProducts(currentLoc).find(p=>p.id===pid)?.customUnits||[])[cuIdx]?.label||'пользовательскую единицу';
+    showConfirm(`Удалить «${unitLabel}»?`,()=>{
+      pushUndoSnapshot(`Удаление единицы «${unitLabel}»`);
+      let cps=getCustomProducts(currentLoc);
+      const ci=cps.findIndex(p=>p.id===pid);
+      if(ci!==-1){ cps[ci].customUnits.splice(cuIdx,1); setCustomProducts(currentLoc,cps); }
+      refreshCustomCard(pid);
+    });
   };
   bHeader.appendChild(nameEl); bHeader.appendChild(delBtn); block.appendChild(bHeader);
   const rowsWrap=document.createElement('div');
@@ -1491,8 +1499,11 @@ function buildUnitBlock(loc,pid,idx,label,isCustom,coef,baseUnit){
     delBtn.style.cssText='background:var(--danger-subtle);border:none;color:var(--danger);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
     delBtn.textContent='✖';
     delBtn.onclick=()=>{
-      let cu=getCU(loc,pid); cu.splice(idx,1); setCU(loc,pid,cu);
-      refreshStdCard(pid, stdProducts.find(p=>p.id===pid), locationRules[loc]?.[pid]||[]);
+      showConfirm(`Удалить единицу «${label}»?`,()=>{
+        pushUndoSnapshot(`Удаление единицы «${label}»`);
+        let cu=getCU(loc,pid); cu.splice(idx,1); setCU(loc,pid,cu);
+        refreshStdCard(pid, stdProducts.find(p=>p.id===pid), locationRules[loc]?.[pid]||[]);
+      });
     };
     bHeader.appendChild(nameEl); bHeader.appendChild(delBtn);
   } else { bHeader.appendChild(nameEl); bHeader.appendChild(subEl); }
@@ -1687,10 +1698,12 @@ function toggleCustomUnitForm(body,loc,pid,isForCustomProduct){
   if(existing){ existing.remove(); return; }
   const form=document.createElement('div');
   form.className='custom-form';
+  const formToken=`${pid}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  form.autocomplete='off';
   form.innerHTML=`
     <div class="custom-form-title">➕ Новая единица</div>
-    <input type="text" placeholder="Название (напр. коробка 10 кг)" id="cfLabel">
-    <input type="number" step="any" inputmode="decimal" placeholder="Сколько базовых единиц" id="cfCoef">
+    <input class="cf-label" type="text" name="unit-label-${formToken}" value="" autocomplete="off" placeholder="Название (напр. коробка 10 кг)">
+    <input class="cf-coef" type="number" name="unit-coef-${formToken}" value="" autocomplete="off" step="any" inputmode="decimal" placeholder="Сколько базовых единиц">
     <div class="custom-form-btns">
       <button class="cf-save" id="cfSave">💾 Сохранить</button>
       <button class="cf-cancel" id="cfCancel">Отмена</button>
@@ -1698,8 +1711,8 @@ function toggleCustomUnitForm(body,loc,pid,isForCustomProduct){
   const footer=body.querySelector('.product-footer');
   body.insertBefore(form,footer);
   form.querySelector('#cfSave').onclick=()=>{
-    const label=form.querySelector('#cfLabel').value.trim();
-    const coef=parseFloat(form.querySelector('#cfCoef').value);
+    const label=form.querySelector('.cf-label').value.trim();
+    const coef=parseFloat(form.querySelector('.cf-coef').value);
     if(!label || isNaN(coef) || coef<=0){ toast('⚠️ Введите корректные данные'); return; }
     if(isForCustomProduct){
       let cps=getCustomProducts(loc);
@@ -1712,7 +1725,9 @@ function toggleCustomUnitForm(body,loc,pid,isForCustomProduct){
     }
   };
   form.querySelector('#cfCancel').onclick=()=>form.remove();
-  form.querySelector('#cfLabel').focus();
+  form.querySelector('.cf-label').value='';
+  form.querySelector('.cf-coef').value='';
+  form.querySelector('.cf-label').focus();
 }
 
 /* ═══════════════════════════════════════
@@ -1883,24 +1898,38 @@ function renderSummary(){
 /* ═══════════════════════════════════════
    CLEAR / RESET
 ═══════════════════════════════════════ */
+function resetStoredInventoryCounts(locFilter){
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(!key)continue;
+    if(key.startsWith('inv_')||key.startsWith('cu_')||key.startsWith('cprods_')){
+      if(locFilter===undefined||key.startsWith(`inv_${locFilter}_`)||key.startsWith(`cu_${locFilter}_`)||key===`cprods_${locFilter}`)keys.push(key);
+      continue;
+    }
+    if(key.startsWith('nq_')&&!key.startsWith('nq_locs_')&&!key.startsWith('nq_units_')){
+      if(locFilter===undefined||key.startsWith(`nq_${locFilter}_`))keys.push(key);
+    }
+  }
+  keys.forEach(key=>{
+    try{
+      if(key.startsWith('inv_')||(key.startsWith('nq_')&&!key.startsWith('nq_locs_')&&!key.startsWith('nq_units_'))){localStorage.setItem(key,'[null]');return;}
+      const rows=JSON.parse(localStorage.getItem(key)||'[]');
+      if(!Array.isArray(rows))return;
+      if(key.startsWith('cu_'))rows.forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+      else rows.forEach(product=>{
+        if(!product||typeof product!=='object')return;
+        product.rows=[null];
+        (product.customUnits||[]).forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+      });
+      localStorage.setItem(key,JSON.stringify(rows));
+    }catch(e){console.warn('Не удалось очистить запись инвентаризации',key,e);}
+  });
+}
 function clearLocation(){
   showConfirm(`Очистить все данные для "${currentLoc}"?`,()=>{
     pushUndoSnapshot(`Очистка помещения «${currentLoc}»`);
-    stdProducts.forEach(p=>{
-      const rules=locationRules[currentLoc]?.[p.id];
-      if(rules) rules.forEach((_,uIdx)=>setRows(currentLoc,p.id,uIdx,[null]));
-      getCU(currentLoc,p.id).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,p.id,getCU(currentLoc,p.id));
-    });
-    NOMENCLATURE.forEach(n=>{
-      if(OLD_TO_EXCEL[n.code]) return;
-      if(!getNqLocs(n.code).includes(currentLoc)) return;
-      setNqRows(n.code, currentLoc, 0, [null]);
-      (n.units||[]).forEach((_,i)=>setNqRows(n.code, currentLoc, i+1, [null]));
-      getNqCustomUnits(n.code).forEach((_,i)=>setNqRows(n.code,currentLoc,(n.units||[]).length+i+1,[null]));
-    });
-    let cps=getCustomProducts(currentLoc);
-    cps.forEach(cp=>{ cp.rows=[null]; (cp.customUnits||[]).forEach(unit=>{unit.rows=[null];}); });
-    setCustomProducts(currentLoc,cps);
+    resetStoredInventoryCounts(currentLoc);
     document.getElementById('addProductFormWrap').innerHTML='';
     renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
     toast('🧹 Помещение очищено');
@@ -1909,23 +1938,7 @@ function clearLocation(){
 function fullReset(){
   showConfirm('⚠️ Удалить ВСЕ данные по всем помещениям?',()=>{
     pushUndoSnapshot('Полный сброс');
-    locations.forEach(loc=>{
-      stdProducts.forEach(p=>{
-        const rules=locationRules[loc]?.[p.id];
-        if(rules) rules.forEach((_,uIdx)=>setRows(loc,p.id,uIdx,[null]));
-        getCU(loc,p.id).forEach(unit=>{unit.rows=[null];});
-       setCU(loc,p.id,getCU(loc,p.id));
-      });
-      let custom=getCustomProducts(loc);custom.forEach(cp=>{cp.rows=[null];(cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});});setCustomProducts(loc,custom);
-    });
-    NOMENCLATURE.forEach(n=>{
-      if(OLD_TO_EXCEL[n.code]) return;
-      locations.forEach(loc=>{
-        setNqRows(n.code, loc, 0, [null]);
-        (n.units||[]).forEach((_,i)=>setNqRows(n.code, loc, i+1, [null]));
-        getNqCustomUnits(n.code).forEach((_,i)=>setNqRows(n.code,loc,(n.units||[]).length+i+1,[null]));
-      });
-    });
+    resetStoredInventoryCounts();
     document.getElementById('addProductFormWrap').innerHTML='';
     renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
     if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
