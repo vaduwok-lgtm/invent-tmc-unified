@@ -4,7 +4,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Инвентаризация ТМЦ</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#175CD3">
@@ -1498,7 +1498,7 @@
             showConfirm(`Очистить "${product.name}"?`,()=>{
                 pushUndoSnapshot(`Очистка «${product.name}»`);
                 unitRules.forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
-                setCU(currentLoc,pid,[]);
+                getCU(currentLoc,pid).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,pid,getCU(currentLoc,pid));
                 refreshStdCard(pid,product,unitRules);
             });
         };
@@ -1548,7 +1548,7 @@
                 pushUndoSnapshot(`Очистка «${cp.name}»`);
                 let cps=getCustomProducts(currentLoc);
                 const idx=cps.findIndex(p=>p.id===pid);
-                if(idx!==-1){cps[idx].rows=[null];cps[idx].customUnits=[];setCustomProducts(currentLoc,cps);}
+                if(idx!==-1){cps[idx].rows=[null];(cps[idx].customUnits||[]).forEach(unit=>{unit.rows=[null];});setCustomProducts(currentLoc,cps);}
                 refreshCustomCard(pid);
             });
         };
@@ -2497,10 +2497,10 @@ function updateNomTotal(n){
             const rules=locationRules[currentLoc]||{};
             Object.keys(rules).forEach(pid=>{
                 rules[pid].forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
-                setCU(currentLoc,pid,[]);
+                getCU(currentLoc,pid).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,pid,getCU(currentLoc,pid));
             });
             let cps=getCustomProducts(currentLoc);
-            cps.forEach(cp=>{cp.rows=[null];cp.customUnits=[];});
+            cps.forEach(cp=>{cp.rows=[null];(cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});});
             setCustomProducts(currentLoc,cps);
             document.getElementById('addProductFormWrap').innerHTML='';
             renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
@@ -2514,10 +2514,18 @@ function updateNomTotal(n){
                 const rules=locationRules[loc]||{};
                 Object.keys(rules).forEach(pid=>{
                     rules[pid].forEach((_,uIdx)=>setRows(loc,pid,uIdx,[null]));
-                    setCU(loc,pid,[]);
+                    getCU(loc,pid).forEach(unit=>{unit.rows=[null];}); setCU(loc,pid,getCU(loc,pid));
                 });
-                stdProducts.forEach(p=>setCU(loc,p.id,[]));
-                setCustomProducts(loc,[]);
+                stdProducts.forEach(p=>{
+                    getCU(loc,p.id).forEach(unit=>{unit.rows=[null];});
+                    setCU(loc,p.id,getCU(loc,p.id));
+                });
+                const customProducts=getCustomProducts(loc);
+                customProducts.forEach(cp=>{
+                    cp.rows=[null];
+                    (cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});
+                });
+                setCustomProducts(loc,customProducts);
             });
             document.getElementById('addProductFormWrap').innerHTML='';
             renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
@@ -2597,6 +2605,9 @@ function updateNomTotal(n){
       navigator.serviceWorker.register('./sw.js');
     }
 })();
+</script>
+<script>
+(()=>{const stopZoom=e=>e.preventDefault();['gesturestart','gesturechange','gestureend'].forEach(type=>document.addEventListener(type,stopZoom,{passive:false}));})();
 </script>
 </body>
 </html>
