@@ -736,6 +736,8 @@ function getNqLocs(code){ const r=localStorage.getItem(nqLocsKey(code)); if(r) r
 function setNqLocs(code,arr){ localStorage.setItem(nqLocsKey(code), JSON.stringify(arr)); }
 function getNqRows(code,loc,uIdx){ const r=localStorage.getItem(nqRowsKey(code,loc,uIdx)); return r?JSON.parse(r):[null]; }
 function setNqRows(code,loc,uIdx,rows){ localStorage.setItem(nqRowsKey(code,loc,uIdx), JSON.stringify(rows)); }
+function getNqCustomUnits(code){ const r=localStorage.getItem(NQ_PREFIX+'units_'+code); return r?JSON.parse(r):[]; }
+function setNqCustomUnits(code,units){ localStorage.setItem(NQ_PREFIX+'units_'+code, JSON.stringify(units)); }
 
 /* ═══════════════════════════════════════
    ХЕЛПЕРЫ
@@ -778,6 +780,9 @@ function getNewLocTotal(loc,code){
   getNqRows(code,loc,0).forEach(v=>{ t += v==null||v===''?0:parseFloat(v); });
   (n.units||[]).forEach((u,i)=>{
     getNqRows(code,loc,i+1).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*u[1]; });
+  });
+  getNqCustomUnits(code).forEach((unit,i)=>{
+    getNqRows(code,loc,(n.units||[]).length+i+1).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*unit.coefficient; });
   });
   return t;
 }
@@ -1140,6 +1145,7 @@ function buildNewProductCard(n){
   body.className='product-body';
   body.appendChild(buildNewUnitBlock(n, 0, n.unit));
   (n.units||[]).forEach((u,i)=>{ body.appendChild(buildNewUnitBlock(n, i+1, u[0])); });
+  getNqCustomUnits(code_).forEach((unit,i)=>{body.appendChild(buildNewUnitBlock(n,(n.units||[]).length+i+1,unit.label));});
 
   const locsBlock=document.createElement('div');
   locsBlock.className='custom-form';
@@ -1172,6 +1178,30 @@ function buildNewProductCard(n){
 
   const footer=document.createElement('div');
   footer.className='product-footer';
+  const addUnitBtn=document.createElement('button');
+  addUnitBtn.className='add-custom-btn';
+  addUnitBtn.textContent='➕ Своя единица';
+  addUnitBtn.onclick=()=>{
+    const form=document.createElement('div');
+    form.className='custom-form';
+    form.innerHTML='<div class="custom-form-title">➕ Новая фасовка</div><input type="text" placeholder="Название (например, коробка 10 кг)"><input type="number" step="any" inputmode="decimal" placeholder="Сколько базовых единиц"><div class="custom-form-btns"><button class="cf-save">💾 Сохранить</button><button class="cf-cancel">Отмена</button></div>';
+    body.insertBefore(form,footer);
+    const inputs=form.querySelectorAll('input');
+    form.querySelector('.cf-save').onclick=()=>{
+      const label=inputs[0].value.trim();
+      const coefficient=parseFloat(inputs[1].value);
+      if(!label||!Number.isFinite(coefficient)||coefficient<=0){toast('⚠️ Введите корректные данные');return;}
+      pushUndoSnapshot(`Добавление фасовки для «${n.name}»`);
+      const units=getNqCustomUnits(code_);
+      units.push({label,coefficient});
+      setNqCustomUnits(code_,units);
+      setNqRows(code_,currentLoc,(n.units||[]).length+units.length,[null]);
+      refreshNewCard(code_);
+      toast(`✅ Фасовка «${label}» добавлена`);
+    };
+    form.querySelector('.cf-cancel').onclick=()=>form.remove();
+    inputs[0].focus();
+  };
   const clrBtn=document.createElement('button');
   clrBtn.className='clear-product-btn';
   clrBtn.textContent='🗑 Очистить';
@@ -1180,10 +1210,11 @@ function buildNewProductCard(n){
       pushUndoSnapshot(`Очистка «${n.name}»`);
       setNqRows(code_, currentLoc, 0, [null]);
       (n.units||[]).forEach((_,i)=>setNqRows(code_, currentLoc, i+1, [null]));
+      getNqCustomUnits(code_).forEach((_,i)=>setNqRows(code_,currentLoc,(n.units||[]).length+i+1,[null]));
       refreshNewCard(code_);
     });
   };
-  footer.appendChild(clrBtn);
+  footer.appendChild(addUnitBtn); footer.appendChild(clrBtn);
   body.appendChild(footer);
 
   card.appendChild(body);
@@ -1212,8 +1243,12 @@ function buildNewUnitBlock(n, uIdx, label){
 
   function coef(){
     if(uIdx===0) return 1;
-    const u=n.units[uIdx-1];
-    return u ? u[1] : 1;
+    if(uIdx<=(n.units||[]).length){
+      const u=n.units[uIdx-1];
+      return u ? u[1] : 1;
+    }
+    const custom=getNqCustomUnits(code_)[uIdx-(n.units||[]).length-1];
+    return custom ? custom.coefficient : 1;
   }
 
   function refreshRows(){
@@ -1859,6 +1894,7 @@ function clearLocation(){
       if(!getNqLocs(n.code).includes(currentLoc)) return;
       setNqRows(n.code, currentLoc, 0, [null]);
       (n.units||[]).forEach((_,i)=>setNqRows(n.code, currentLoc, i+1, [null]));
+      getNqCustomUnits(n.code).forEach((_,i)=>setNqRows(n.code,currentLoc,(n.units||[]).length+i+1,[null]));
     });
     let cps=getCustomProducts(currentLoc);
     cps.forEach(cp=>{ cp.rows=[null]; (cp.customUnits||[]).forEach(unit=>{unit.rows=[null];}); });
@@ -1885,6 +1921,7 @@ function fullReset(){
       locations.forEach(loc=>{
         setNqRows(n.code, loc, 0, [null]);
         (n.units||[]).forEach((_,i)=>setNqRows(n.code, loc, i+1, [null]));
+        getNqCustomUnits(n.code).forEach((_,i)=>setNqRows(n.code,loc,(n.units||[]).length+i+1,[null]));
       });
     });
     document.getElementById('addProductFormWrap').innerHTML='';
