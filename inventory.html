@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Инвентаризация ТМЦ</title>
+<meta name="theme-color" content="#175CD3">
+<style>
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+:root{
+  --surface:#fff;--canvas:#f7f8fa;--border:#e4e7ec;--border-light:#f2f4f7;
+  --text-primary:#101828;--text-secondary:#667085;--text-tertiary:#98a2b3;
+  --accent:#175cd3;--accent-hover:#1849a9;--accent-subtle:#eff4ff;
+  --success:#067647;--success-subtle:#ecfdf3;--warning:#b54708;--warning-subtle:#fffaeb;
+  --danger:#b42318;--danger-subtle:#fef3f2;--purple:#6941c6;--purple-subtle:#f4f3ff;
+  --shadow-sm:0 1px 2px rgba(16,24,40,.05);
+  --shadow-lg:0 4px 12px rgba(16,24,40,.12),0 2px 4px rgba(16,24,40,.06);
+  --radius-sm:8px;--radius-md:10px;--radius-lg:12px;
+  --header-h:48px;--nav-h:56px;--safe-bottom:env(safe-area-inset-bottom,0px);
+  --font-sans:'Inter',ui-sans-serif,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --ease:100ms ease;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-sans);font-size:15px;line-height:1.5;background:var(--canvas);color:var(--text-primary);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.icon{display:block;width:20px;height:20px;flex-shrink:0;color:currentColor}
+.icon--logo{width:18px;height:18px}
+
+/* HEADER */
+.app-header{height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:10px;z-index:10;flex-shrink:0}
+.logo{width:32px;height:32px;background:var(--text-primary);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.header-brand{flex:1;min-width:0}
+.header-title{font-size:16px;font-weight:600;color:var(--text-primary);letter-spacing:-.02em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.header-undo-btn,.header-reset-btn{position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:none;border:none;border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;touch-action:manipulation;transition:background-color var(--ease),color var(--ease)}
+.header-undo-btn:hover:not(:disabled),.header-reset-btn:hover{background:var(--border-light);color:var(--text-primary)}
+.header-undo-btn:disabled{opacity:.35;cursor:not-allowed}
+.header-undo-btn:focus-visible,.header-reset-btn:focus-visible,.nav-btn:focus-visible,.fab:focus-visible,.scroll-top-fab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.undo-badge{position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-size:9px;font-weight:600;font-variant-numeric:tabular-nums;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--surface)}
+
+/* BODY */
+.app-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 84px)}
+
+/* BOTTOM NAV */
+.bottom-nav{height:calc(var(--nav-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:stretch;flex-shrink:0;z-index:10}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;border:none;cursor:pointer;touch-action:manipulation;color:var(--text-tertiary);font-family:inherit;font-size:11px;font-weight:500;padding:6px 4px 8px;transition:color var(--ease);position:relative}
+.nav-btn.active{color:var(--accent)}
+.nav-btn.active::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+.nav-badge{position:absolute;top:4px;right:calc(50% - 22px);background:var(--success);color:#fff;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--surface)}
+
+/* TAB VIEWS */
+.tab-view{display:none}
+.tab-view.active{display:block}
+
+/* FABs */
+.fab,.scroll-top-fab{position:fixed;right:16px;width:52px;height:52px;border:0;border-radius:50%;background:var(--accent);color:#fff;cursor:pointer;box-shadow:var(--shadow-lg);z-index:20;display:flex;align-items:center;justify-content:center;transition:background-color var(--ease),opacity var(--ease),transform var(--ease)}
+.fab{bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);font-size:28px;font-weight:300}
+.fab:active{background:var(--accent-hover);transform:scale(.96)}
+.scroll-top-fab{bottom:calc(var(--nav-h) + var(--safe-bottom) + 80px);background:var(--text-primary);opacity:0;pointer-events:none}
+.scroll-top-fab.visible{opacity:1;pointer-events:auto}
+
+/* LOC STRIP */
+.loc-strip-wrap{background:#fff;border-bottom:1px solid var(--border);padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;display:flex;gap:8px;scrollbar-width:none}
+.loc-strip-wrap::-webkit-scrollbar{display:none}
+.loc-chip{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;border:1.5px solid var(--border);background:#fff;color:var(--text-secondary);cursor:pointer;touch-action:manipulation;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.loc-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.loc-chip .loc-dot{width:7px;height:7px;border-radius:50%;background:var(--success);display:none}
+.loc-chip.has-data .loc-dot{display:block}
+.loc-chip.active .loc-dot{background:rgba(255,255,255,.7)}
+
+/* STATS */
+.stats-row{display:flex;gap:10px;padding:12px 12px 0}
+.stat-pill{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center}
+.stat-pill .sp-val{font-size:20px;font-weight:700;color:var(--text-primary);line-height:1;font-variant-numeric:tabular-nums}
+.stat-pill .sp-val.green{color:var(--success)}
+.stat-pill .sp-val.blue{color:var(--accent)}
+.stat-pill .sp-lbl{font-size:10px;color:var(--text-tertiary);margin-top:3px;font-weight:500}
+
+/* SEARCH (inventory) */
+.inv-search-wrap{padding:12px 12px 0;position:relative}
+.inv-search-wrap input{width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:11px 14px 11px 38px;font-size:15px;color:var(--text-primary);font-family:inherit}
+.inv-search-wrap input:focus{outline:none;border-color:var(--accent)}
+.inv-search-icon{position:absolute;left:24px;top:calc(50% + 6px);transform:translateY(-50%);color:var(--text-tertiary);pointer-events:none;display:flex}
+.inv-search-clear{position:absolute;right:22px;top:calc(50% + 6px);transform:translateY(-50%);background:var(--border-light);border:none;border-radius:50%;width:24px;height:24px;color:var(--text-secondary);cursor:pointer;font-size:16px;line-height:1;display:none;align-items:center;justify-content:center}
+.inv-search-clear.visible{display:flex}
+
+/* CATEGORY STRIP */
+.category-strip-wrap{display:flex;gap:8px;padding:10px 12px 0;overflow-x:auto;scrollbar-width:none}
+.category-strip-wrap::-webkit-scrollbar{display:none}
+.category-chip{flex-shrink:0;padding:7px 13px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);color:var(--text-secondary);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.category-chip.active{color:var(--accent);border-color:var(--accent-subtle);background:var(--accent-subtle)}
+
+/* PRODUCTS */
+.products-list{padding:12px;display:flex;flex-direction:column;gap:10px}
+.product-card{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.product-card.has-data{border-color:#bfdbfe}
+.product-card.custom-product{border-color:#fed7aa}
+.product-card.custom-product.has-data{border-color:#fb923c}
+.product-header{display:flex;align-items:center;padding:14px 14px 14px 16px;gap:10px;cursor:pointer;touch-action:manipulation;user-select:none}
+.product-indicator{width:4px;align-self:stretch;border-radius:4px;background:var(--border);flex-shrink:0;margin-left:-4px}
+.product-card.has-data .product-indicator{background:var(--accent)}
+.product-card.custom-product .product-indicator{background:#fed7aa}
+.product-card.custom-product.has-data .product-indicator{background:var(--warning)}
+.product-main{flex:1;min-width:0}
+.product-name{font-size:15px;font-weight:700;color:var(--text-primary);line-height:1.3}
+.product-sub{font-size:11px;color:var(--text-tertiary);margin-top:2px;font-weight:500}
+.product-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.product-total{font-size:16px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.product-total.zero{color:#d0d5dd}
+.product-unit-tag{font-size:11px;color:var(--text-tertiary);background:var(--border-light);padding:2px 8px;border-radius:20px;font-weight:600}
+.custom-tag{font-size:10px;color:var(--warning);background:var(--warning-subtle);padding:2px 8px;border-radius:20px;font-weight:700}
+.product-chevron{font-size:18px;color:#d0d5dd;transition:transform .2s;flex-shrink:0}
+.product-card.open .product-chevron{transform:rotate(180deg)}
+.product-body{display:none;border-top:1px solid var(--border-light);padding:12px;background:var(--canvas)}
+.product-card.open .product-body{display:block}
+
+/* UNIT BLOCK */
+.unit-block{margin-bottom:10px;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.unit-block:last-of-type{margin-bottom:0}
+.unit-block-header{padding:8px 12px;background:var(--canvas);border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.unit-name{font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em}
+.unit-subtotal{font-size:12px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+.unit-rows{padding:8px;display:flex;flex-direction:column;gap:6px}
+
+/* ROW */
+.row-item{display:flex;align-items:center;gap:6px}
+.row-num{width:20px;text-align:center;font-size:11px;color:var(--text-tertiary);font-weight:600;flex-shrink:0;font-variant-numeric:tabular-nums}
+.vc{flex:1;display:flex;align-items:center;background:var(--border-light);border-radius:10px;overflow:hidden;border:1px solid var(--border);height:48px;min-width:0}
+.vc-btn{width:44px;height:48px;flex-shrink:0;background:transparent;border:none;font-size:26px;font-weight:300;color:var(--text-secondary);cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;transition:background .1s}
+.vc-btn:active{background:var(--accent);color:#fff}
+.vc-input{flex:1;text-align:center;font-size:18px;font-weight:700;background:#fff;border:none;color:var(--text-primary);padding:0 4px;height:100%;min-width:0;font-variant-numeric:tabular-nums;font-family:inherit}
+.vc-input:focus{outline:none}
+.vc-input::placeholder{color:#d0d5dd;font-weight:400}
+.row-actions{display:flex;gap:4px;flex-shrink:0}
+.row-action-btn{width:38px;height:48px;border-radius:10px;border:1px solid var(--border);background:#fff;font-size:18px;font-weight:bold;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);transition:all .1s}
+.row-action-btn:active{background:var(--border)}
+.row-action-btn.del{background:var(--danger-subtle);color:var(--danger);border-color:#fecaca}
+.row-action-btn.del:active{background:#fecaca}
+
+/* FOOTER BUTTONS */
+.product-footer{padding:10px 0 0;display:flex;gap:8px;flex-wrap:wrap}
+.add-custom-btn,.clear-product-btn,.delete-product-btn{flex:1;min-width:120px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;border:1.5px dashed #d0d5dd;background:transparent;color:var(--text-secondary);cursor:pointer;touch-action:manipulation;text-align:center;font-family:inherit}
+.add-custom-btn:active{background:var(--accent-subtle);color:var(--accent);border-color:var(--accent);border-style:solid}
+.clear-product-btn{border-color:#fecaca;color:var(--danger)}
+.clear-product-btn:active{background:var(--danger-subtle)}
+.delete-product-btn{border-color:#fed7aa;color:var(--warning);border-style:solid;background:var(--warning-subtle)}
+.delete-product-btn:active{background:#fed7aa}
+
+/* CUSTOM FORM */
+.custom-form{margin:10px 0 0;background:var(--accent-subtle);border:1px solid #bfdbfe;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.custom-form-title{font-size:13px;font-weight:700;color:var(--accent)}
+.custom-form input{background:#fff;border:1px solid #bfdbfe;padding:10px 12px;border-radius:10px;color:var(--text-primary);font-size:14px;width:100%;font-family:inherit}
+.custom-form input:focus{outline:2px solid var(--accent)}
+.custom-form-btns{display:flex;gap:8px}
+.custom-form-btns button{flex:1;padding:10px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation;font-family:inherit}
+.cf-save{background:var(--accent);color:#fff}
+.cf-cancel{background:var(--border-light);color:var(--text-secondary)}
+
+/* ADD PRODUCT FORM */
+.add-product-form{margin:0 0 12px;background:var(--warning-subtle);border:1px solid #fed7aa;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.add-product-form-title{font-size:14px;font-weight:700;color:var(--warning)}
+.add-product-form input,.add-product-form select{background:#fff;border:1px solid #fed7aa;padding:12px;border-radius:10px;color:var(--text-primary);font-size:15px;width:100%;font-family:inherit}
+.add-product-form input:focus,.add-product-form select:focus{outline:2px solid var(--warning)}
+.add-product-form-btns{display:flex;gap:8px}
+.add-product-form-btns button{flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;touch-action:manipulation;font-family:inherit}
+.apf-save{background:var(--warning);color:#fff}
+.apf-cancel{background:var(--border-light);color:var(--text-secondary)}
+.add-product-btn{margin:0 12px 4px;padding:14px;border-radius:14px;font-size:14px;font-weight:700;border:2px dashed #fed7aa;background:var(--warning-subtle);color:var(--warning);cursor:pointer;touch-action:manipulation;text-align:center;width:calc(100% - 24px);display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit}
+.add-product-btn:active{background:#fed7aa}
+
+.clear-loc-btn{margin:8px 12px 12px;width:calc(100% - 24px);padding:14px;background:var(--danger-subtle);border:1.5px solid #fecaca;border-radius:12px;font-size:14px;font-weight:700;color:var(--danger);cursor:pointer;touch-action:manipulation;text-align:center;font-family:inherit}
+.clear-loc-btn:active{background:#fecaca}
+
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-tertiary)}
+.empty-state .ei{font-size:52px;margin-bottom:12px}
+.empty-state p{font-size:15px}
+
+/* SUMMARY */
+.summary-header{padding:16px 16px 12px}
+.summary-header h2{font-size:18px;font-weight:700}
+.summary-header p{font-size:12px;color:var(--text-tertiary);margin-top:2px}
+.summary-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px}
+.ss-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px}
+.ss-card .ss-val{font-size:26px;font-weight:700;color:var(--text-primary);line-height:1;font-variant-numeric:tabular-nums}
+.ss-card .ss-val.green{color:var(--success)}
+.ss-card .ss-val.blue{color:var(--accent)}
+.ss-card .ss-lbl{font-size:12px;color:var(--text-tertiary);margin-top:4px;font-weight:500}
+.search-wrap{padding:0 16px 12px;position:relative}
+.search-wrap input{width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:12px 16px 12px 40px;font-size:15px;color:var(--text-primary);font-family:inherit}
+.search-wrap input:focus{outline:none;border-color:var(--accent)}
+.search-icon{position:absolute;left:28px;top:50%;transform:translateY(-50%);color:var(--text-tertiary);pointer-events:none;display:flex}
+.filter-row{padding:0 16px 12px;display:flex;gap:8px}
+.filter-chip{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:#fff;color:var(--text-secondary);cursor:pointer;touch-action:manipulation;transition:all .15s;font-family:inherit}
+.filter-chip.active{background:var(--accent-subtle);border-color:var(--accent);color:var(--accent)}
+.summary-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.sum-item{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:flex-start;gap:10px}
+.sum-item.zero{opacity:.5}
+.sum-item.custom{border-color:#fed7aa}
+.sum-item-left{flex:1;min-width:0}
+.sum-item-name{font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.sum-item-detail{font-size:11px;color:var(--text-tertiary);line-height:1.5}
+.sum-item-right{text-align:right;flex-shrink:0}
+.sum-item-val{font-size:20px;font-weight:700;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums}
+.sum-item-val.zero{color:#d0d5dd}
+.sum-item-unit{font-size:11px;color:var(--text-tertiary);font-weight:600;margin-top:3px}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 88px);left:50%;transform:translateX(-50%) translateY(8px);background:var(--text-primary);color:#fff;padding:10px 16px;border-radius:var(--radius-md);font-size:14px;font-weight:500;opacity:0;transition:opacity .15s ease,transform .15s ease;z-index:1000;max-width:calc(100% - 32px);text-align:center;pointer-events:none;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* CONFIRM */
+.confirm-overlay{position:fixed;inset:0;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center;padding:24px;z-index:2000;opacity:0;pointer-events:none;transition:opacity .15s ease}
+.confirm-overlay.show{opacity:1;pointer-events:auto}
+.confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:100%;max-width:320px;box-shadow:var(--shadow-lg)}
+.confirm-msg{font-size:15px;font-weight:500;color:var(--text-primary);line-height:1.5;margin-bottom:16px}
+.confirm-btns{display:flex;gap:8px}
+.confirm-btns button{flex:1;padding:10px 12px;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:600;border:none;cursor:pointer;touch-action:manipulation}
+.confirm-cancel{background:var(--border-light);color:var(--text-secondary)}
+.confirm-ok{background:var(--danger);color:#fff}
+.confirm-btns button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* LOCATION MULTISELECT */
+.loc-multi{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.loc-multi label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-secondary);background:#fff;border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer}
+.loc-multi input{width:14px;height:14px;accent-color:var(--accent)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.suite-back-link{position:relative;z-index:2;align-self:flex-start;margin:8px 12px 0;padding:8px 12px;border:1px solid var(--border,#e4e7ec);border-radius:12px;background:rgba(255,255,255,.94);color:var(--text-secondary,#667085);font-size:12px;line-height:1.2;font-weight:600;font-family:inherit;text-decoration:none;box-shadow:0 2px 8px rgba(16,24,40,.08);backdrop-filter:blur(8px)}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo" aria-hidden="true">
+    <svg class="icon icon--logo" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+  </div>
+  <div class="header-brand"><div class="header-title">Инвентаризация ТМЦ</div></div>
+  <div class="header-actions">
+    <button class="header-undo-btn" id="undoBtn" type="button" title="Отменить последнее действие" aria-label="Отменить последнее действие" disabled>
+      <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M6.5 7H3.5V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 10a5.5 5.5 0 1 0 1.1-3.3L3.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="undo-badge" id="undoBadge" style="display:none;"></span>
+    </button>
+    <button class="header-reset-btn" id="hardResetBtn" type="button" title="Полный сброс" aria-label="Полный сброс">
+      <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M4 6h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.5 6V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 6l.75 10h6.5l.75-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</header>
+<a class="suite-back-link" href="./index.html">← Выбрать режим</a>
+
+<div class="app-body" id="appBody">
+
+  <div class="tab-view active" id="tabInventory">
+    <div class="loc-strip-wrap" id="locStrip"></div>
+    <div class="stats-row">
+      <div class="stat-pill"><div class="sp-val" id="stTotal">—</div><div class="sp-lbl">Позиций</div></div>
+      <div class="stat-pill"><div class="sp-val green" id="stFilled">—</div><div class="sp-lbl">Заполнено</div></div>
+      <div class="stat-pill"><div class="sp-val blue" id="stPct">—</div><div class="sp-lbl">Готовность</div></div>
+    </div>
+    <div class="inv-search-wrap">
+      <span class="inv-search-icon"><svg class="icon" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+      <input type="text" id="invSearchInput" placeholder="Поиск по названию, коду, категории...">
+      <button class="inv-search-clear" id="invSearchClear" type="button" aria-label="Очистить поиск">×</button>
+    </div>
+    <div class="category-strip-wrap" id="categoryStrip" aria-label="Категории"></div>
+    <div class="products-list" id="productsList"></div>
+    <div id="addProductFormWrap" style="padding:0 12px;"></div>
+    <button class="add-product-btn" id="addProductBtn">➕ Добавить свой продукт</button>
+    <button class="clear-loc-btn" id="clearLocBtn">🧹 Очистить помещение</button>
+  </div>
+
+  <div class="tab-view" id="tabSummary">
+    <div class="summary-header"><h2>Итоги</h2><p>По всем помещениям</p></div>
+    <div class="summary-stats" id="summaryStats"></div>
+    <div class="search-wrap">
+      <span class="search-icon"><svg class="icon" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+      <input type="text" id="searchInput" placeholder="Поиск продукта...">
+    </div>
+    <div class="filter-row">
+      <button class="filter-chip" id="filterAllBtn">Все</button>
+      <button class="filter-chip active" id="filterFilledBtn">Только заполненные</button>
+    </div>
+    <div class="summary-list" id="summaryList"></div>
+  </div>
+
+</div>
+
+<button class="scroll-top-fab" id="scrollTopFab" type="button" aria-label="Наверх">
+  <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 5v10M6 9l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<button class="fab" id="quickAddFab" type="button" aria-label="Быстро добавить ТМЦ">+</button>
+
+<nav class="bottom-nav" aria-label="Основная навигация">
+  <button class="nav-btn active" id="navInventory" type="button" data-tab="inventory" aria-current="page">
+    <span class="nav-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 20 20" fill="none"><rect x="5.5" y="4.5" width="9" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 4.5V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.5"/><path d="M8 9h4M8 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+    Подсчёт
+  </button>
+  <button class="nav-btn" id="navSummary" type="button" data-tab="summary">
+    <span class="nav-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M4 16V8M8 16V4M12 16v-6M16 16v-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+    Итоги    <span class="nav-badge" id="navBadge" style="display:none;"></span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" id="confirmCancelBtn">Отмена</button>
+      <button class="confirm-ok" id="confirmOkBtn">Да, удалить</button>
+    </div>
+  </div>
+</div>
+
+<script>(()=>{'use strict';const p="combined:full:";const g=Storage.prototype.getItem,s=Storage.prototype.setItem,r=Storage.prototype.removeItem,c=Storage.prototype.clear,k=Storage.prototype.key;const own=()=>{const a=[];for(let i=0;i<Storage.prototype.__nativeLength.call(localStorage);i++){const x=k.call(localStorage,i);if(x&&x.startsWith(p))a.push(x.slice(p.length));}return a};Object.defineProperty(Storage.prototype,'__nativeLength',{value:Object.getOwnPropertyDescriptor(Storage.prototype,'length').get,configurable:true});Object.defineProperty(Storage.prototype,'length',{get(){return own().length},configurable:true});Storage.prototype.getItem=function(x){return g.call(this,p+String(x))};Storage.prototype.setItem=function(x,v){return s.call(this,p+String(x),v)};Storage.prototype.removeItem=function(x){return r.call(this,p+String(x))};Storage.prototype.clear=function(){for(let i=this.length-1;i>=0;i--){const x=this.key(i);if(x!==null)this.removeItem(x)}};Storage.prototype.key=function(i){const a=own();return a[i]??null};})();</script>
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════════════════════════════
+   СТАРЫЕ ПРОДУКТЫ p1–p27
+═══════════════════════════════════════ */
+const stdProducts = [
+  { id:"p1",  name:"Голень",                    baseUnit:"шт" },
+  { id:"p2",  name:"Крылья",                    baseUnit:"шт" },
+  { id:"p3",  name:"Байтсы",                    baseUnit:"кг" },
+  { id:"p4",  name:"Филе Классик",              baseUnit:"шт" },
+  { id:"p5",  name:"Филе Зингер",               baseUnit:"шт" },
+  { id:"p6",  name:"Филе куриное малое",        baseUnit:"шт" },
+  { id:"p7",  name:"Филе куриное малое острое", baseUnit:"шт" },
+  { id:"p8",  name:"Наггетсы",                  baseUnit:"шт" },
+  { id:"p9",  name:"Креветки",                  baseUnit:"кг" },
+  { id:"p10", name:"Картофель фри",             baseUnit:"кг" },
+  { id:"p11", name:"Картофельные дольки",       baseUnit:"кг" },
+  { id:"p12", name:"Смесь для мороженого",      baseUnit:"кг" },
+  { id:"p13", name:"Смесь для коктейля",        baseUnit:"кг" },
+  { id:"p14", name:"Молоко",                    baseUnit:"л"  },
+  { id:"p15", name:"Сыр Хохланд",               baseUnit:"шт" },
+  { id:"p16", name:"Кофе",                      baseUnit:"кг" },
+  { id:"p17", name:"Мука",                      baseUnit:"кг" },
+  { id:"p18", name:"Пиво Бад бочковое",         baseUnit:"л"  },
+  { id:"p19", name:"Пиво RED FINCH В КЕГЕ",     baseUnit:"л"  },
+  { id:"p20", name:"Баллон СО₂ Пепси 20 мл",    baseUnit:"шт" },
+  { id:"p21", name:"Баллон газовый СО₂ ПИВО",   baseUnit:"шт" },
+  { id:"p22", name:"Кега мал пиво 20 л",        baseUnit:"шт" },
+  { id:"p23", name:"Кега бол пиво 30 л",        baseUnit:"шт" },
+  { id:"p24", name:"Котлета куриная",            baseUnit:"кг" },
+  { id:"p25", name:"Котлета сырная",             baseUnit:"кг" },
+  { id:"p26", name:"Бекон нарезанный",           baseUnit:"кг" },
+  { id:"p27", name:"Масло фритюрное",            baseUnit:"кг" }
+];
+
+const PRODUCT_CATEGORIES = {
+  chicken:   { label:'Курица',    ids:['p1','p2','p3','p4','p5','p6','p7'] },
+  potato:    { label:'Картофель', ids:['p8','p9','p10','p11','p24','p25'] },
+  mixes:     { label:'Смеси',     ids:['p12','p13','p14'] },
+  pantry:    { label:'Бакалея',   ids:['p15','p16','p17','p26','p27'] },
+  beer:      { label:'Пиво',      ids:['p18','p19'] },
+  containers:{ label:'Тара',      ids:['p20','p21','p22','p23'] }
+};
+function productCategory(id){
+  return Object.keys(PRODUCT_CATEGORIES).find(k=>PRODUCT_CATEGORIES[k].ids.includes(id)) || 'other';
+}
+
+function mu(label, fn){ return { label, toBase: fn }; }
+const RM = {1:22.31,2:20.09,3:17.87,4:15.65,5:13.43,6:11.21,7:8.99,8:6.77};
+const RC = {1:25.38,2:23.22,3:21.06,4:18.9,5:16.74,6:14.58,7:12.42,8:10.26};
+
+const locationRules = {
+  "На станции": {
+    p1:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18)],
+    p2:[mu("шт",q=>q),mu("пакет (50 шт)",q=>q*50),mu("пакет (60 шт)",q=>q*60)],
+    p3:[mu("кг",q=>q),mu("пакет (2 кг)",q=>q*2)],
+    p4:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18)],
+    p5:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18)],
+    p6:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36)],
+    p7:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36)],
+    p8:[mu("шт",q=>q),mu("кг",q=>q/0.019),mu("пакет (100 шт)",q=>q*100)],
+    p9:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q)],
+    p10:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+    p11:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+    p12:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1),mu("Уровень Ризки (1-8)",l=>{let v=Math.round(l);return(v>=1&&v<=8)?RM[v]:0;})],
+    p13:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1),mu("Уровень Ризки (1-8)",l=>{let v=Math.round(l);return(v>=1&&v<=8)?RC[v]:0;})],
+    p14:[mu("л",q=>q),mu("упаковка (1 л)",q=>q),mu("коробка (12 л)",q=>q*12),mu("коробка (11,7 л)",q=>q*11.7)],
+    p15:[mu("шт",q=>q),mu("пачка (32 шт)",q=>q*32),mu("брикет (160 шт)",q=>q*160),mu("коробка (960 шт)",q=>q*960)],
+    p16:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q)],
+    p17:[mu("кг",q=>q),mu("упаковка (11,34 кг)",q=>q*11.34)],
+    p18:[mu("л",q=>q),mu("кега 20 л",q=>q*20),mu("кега 30 л",q=>q*30)],
+    p19:[mu("л",q=>q),mu("кега 20 л",q=>q*20),mu("кега 30 л",q=>q*30)],
+    p20:[mu("шт",q=>q)],p21:[mu("шт",q=>q)],p22:[mu("шт",q=>q)],p23:[mu("шт",q=>q)],
+    p24:[mu("кг",q=>q),mu("упаковка (2 кг)",q=>q*2)],
+    p25:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q)],
+    p26:[mu("кг",q=>q),mu("упаковка (0,25 кг)",q=>q*0.25)],
+    p27:[mu("кг",q=>q),mu("бутылка (6,9 кг)",q=>q*6.9),mu("коробка (13,8 кг)",q=>q*13.8)]
+  },
+  "Дефрост": {
+    p1:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (6 пак.)",q=>q*108),mu("коробка (8 пак.)",q=>q*144)],
+    p2:[mu("шт",q=>q),mu("пакет (50 шт)",q=>q*50),mu("пакет (60 шт)",q=>q*60),mu("коробка (6 пак.)",q=>q*300),mu("коробка (8 пак.)",q=>q*400)],
+    p3:[mu("кг",q=>q),mu("пакет (2 кг)",q=>q*2),mu("коробка (6 пак.)",q=>q*12),mu("коробка (8 пак.)",q=>q*16)],
+    p4:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+    p5:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+    p6:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+    p7:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)]
+  },
+  "Морозный ларь": {
+    p8:[mu("шт",q=>q),mu("кг",q=>q/0.019),mu("пакет (100 шт)",q=>q*100)],
+    p9:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q)],
+    p10:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+    p11:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+    p24:[mu("кг",q=>q),mu("упаковка (2 кг)",q=>q*2),mu("коробка (12 кг)",q=>q*12)],
+    p25:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q),mu("коробка (10 кг)",q=>q*10)]
+  },
+  "Морозильная камера": {
+    p1:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (6 пак.)",q=>q*108),mu("коробка (8 пак.)",q=>q*144)],
+    p2:[mu("шт",q=>q),mu("пакет (50 шт)",q=>q*50),mu("пакет (60 шт)",q=>q*60),mu("коробка (6 пак.)",q=>q*300),mu("коробка (8 пак.)",q=>q*400)],
+    p3:[mu("кг",q=>q),mu("пакет (2 кг)",q=>q*2),mu("коробка (6 пак.)",q=>q*12),mu("коробка (8 пак.)",q=>q*16)],
+    p4:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+    p5:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+    p6:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+    p7:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+    p8:[mu("шт",q=>q),mu("пакет (100 шт)",q=>q*100),mu("коробка (7 пак.)",q=>q*700)],
+    p9:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q),mu("коробка (10 пак.)",q=>q*10)],
+    p10:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5),mu("коробка (5 пак.)",q=>q*12.5)],
+    p11:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5),mu("коробка (5 пак.)",q=>q*12.5)],
+    p24:[mu("кг",q=>q),mu("упаковка (2 кг)",q=>q*2),mu("коробка (12 кг)",q=>q*12)],
+    p25:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q),mu("коробка (10 кг)",q=>q*10)],
+    p26:[mu("кг",q=>q),mu("упаковка (0,25 кг)",q=>q*0.25),mu("коробка (2,5 кг)",q=>q*2.5),mu("коробка (5 кг)",q=>q*5),mu("коробка (2,4 кг)",q=>q*2.4)]
+  },
+  "Холодильная камера": {
+    p12:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1)],
+    p13:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1)],
+    p14:[mu("л",q=>q),mu("упаковка (1 л)",q=>q),mu("коробка (12 л)",q=>q*12),mu("коробка (11,7 л)",q=>q*11.7)],
+    p15:[mu("шт",q=>q),mu("брикет (160 шт)",q=>q*160),mu("коробка (960 шт)",q=>q*960)],
+    p27:[mu("кг",q=>q),mu("бутылка (6,9 кг)",q=>q*6.9),mu("коробка (13,8 кг)",q=>q*13.8)]
+  },
+  "Сухой склад": {
+    p16:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q),mu("коробка (8 кг)",q=>q*8),mu("коробка (4 кг)",q=>q*4)],
+    p17:[mu("пакет (11,34 кг)",q=>q*11.34)],
+    p27:[mu("кг",q=>q),mu("бутылка (6,9 кг)",q=>q*6.9),mu("коробка (13,8 кг)",q=>q*13.8)]
+  }
+};
+
+const locations = ["На станции","Морозный ларь","Дефрост","Морозильная камера","Холодильная камера","Сухой склад"];
+let currentLocIdx = 0;
+let currentLoc = locations[0];
+let currentCategory = 'all';
+let filterOnlyFilled = true;
+let searchQ = '';
+let invSearchQ = '';
+
+/* ═══════════════════════════════════════
+   КАРТА СООТВЕТСТВИЙ Excel ↔ старые p1–p27
+═══════════════════════════════════════ */
+const OLD_TO_EXCEL = {
+  'FHPHF14076-F': 'p1',   // ГОЛЕНЬ В МАРИНАДЕ
+  'FHPHF14035-F': 'p2',   // КРЫЛЬЯ ОСТРЫЕ КУРИНЫЕ
+  'FHPHF14098-F': 'p3',   // БАЙТСЫ ETC
+  'FHPHF14033-F': 'p4',   // ФИЛЕ КЛАССИК КУРИНОЕ
+  'FHPHF14034-F': 'p5',   // ФИЛЕ ЗИНГЕР КУРИНОЕ
+  'FHPHF14044-F': 'p6',   // ФИЛЕ КУРИНОЕ МАЛОЕ
+  'FHPHF14045-F': 'p7',   // ФИЛЕ КУРИНОЕ МАЛОЕ ОСТРОЕ
+  'FHPHF001091':  'p8',   // НАГГЕТСЫ В ТЕМПУРЕ
+  'SHRIMP000504': 'p9',   // КРЕВЕТКА БЕЛОНОГАЯ ОЧИЩЕННАЯ В ПАНИРОВКЕ
+  'FHPHF51019-F': 'p10',  // КАРТОФЕЛЬ ФРИ 6/6 KFC
+  'FHPHF51022-F': 'p11',  // КАРТОФЕЛЬНЫЕ ДОЛЬКИ СО СПЕЦИЯМИ
+  'FMIMI50010-F': 'p12',  // СМЕСЬ МОЛОЧНАЯ… ДЛЯ МОРОЖЕНОГО 3
+  'FMIMI50007-F': 'p13',  // СМЕСЬ МОЛОЧНАЯ… ДЛЯ КОКТЕЙЛЯ 2.5
+  'FMIMI10015-F': 'p14',  // МОЛОКО УЛЬТРАПАСТЕРИЗОВАННОЕ 1,5%
+  'FMICH11001-F': 'p15',  // СЫР ХОХЛАНД
+  'BTCCF30053-B': 'p16',  // КОФЕ ЖАРДИН НАТУРАЛЬНЫЙ ЖАРЕНЫЙ В ЗЕРНАХ
+  'FGRFL10015-F': 'p17',  // МУКА ДЛЯ ПАНИРОВКИ
+  'FHPHF000071': 'p24',   // КОТЛЕТА КУРИНАЯ ЗАМОРОЖЕННАЯ В КГ
+  'FMICH000025': 'p25',   // КОТЛЕТА СЫРНАЯ ЗАМОРОЖЕННАЯ В КГ 10%
+  'FMPSM43006-F': 'p26',  // БЕКОН НАРЕЗАННЫЙ
+  'FOIEF20000-F': 'p27'   // МАСЛО ФРИТЮРНОЕ
+};
+const EXCEL_TO_OLD = {};
+Object.keys(OLD_TO_EXCEL).forEach(code=>{ EXCEL_TO_OLD[OLD_TO_EXCEL[code]] = code; });
+
+/* ═══════════════════════════════════════
+   НОВАЯ НОМЕНКЛАТУРА — строго в порядке Excel
+═══════════════════════════════════════ */
+const NOMENCLATURE_GROUPS = {
+  meat:      'Мясо / птица / полуфабрикаты',
+  veg:       'Овощи / картофель',
+  sauce:     'Соусы / специи',
+  drinks:    'Напитки / сиропы',
+  bakery:    'Выпечка / десерты',
+  pantry:    'Бакалея / сырьё',
+  pack:      'Упаковка / расходники',
+  promo:     'Промо'
+};
+
+const NOMENCLATURE = [
+  // 1–2 Бекон
+  {code:'FMPSM001526', cat:'Бекон', group:'meat', name:'ВЕТЧИНА МРАМОРНАЯ ИЗ МЯСА ИНДЕЙКИ', unit:'кг', units:[['кор 2.52 кг',2.52], ['коробка (4,08 кг)',4.08]]},
+  {code:'FMPSM43006-F', cat:'Бекон', group:'meat', name:'БЕКОН НАРЕЗАННЫЙ', unit:'кг', units:[['кор 2.4 кг',2.4]]},
+  // 3–8 Булочки
+  {code:'FCTFL000113', cat:'Булочки', group:'bakery', name:'БУЛОЧКА ДЛЯ БУРГЕРА БРИОШЬ', unit:'шт', units:[['уп 48 шт',48]]},
+  {code:'FCTFL20054-F', cat:'Булочки', group:'bakery', name:'БУЛОЧКА С КУНЖУТОМ ИМПРИНТ', unit:'шт', units:[['уп 48 шт',48]]},
+  {code:'FCTFL000171', cat:'Булочки', group:'bakery', name:'БУЛОЧКА ДЛЯ БУРГЕРА БРИОШЬ 125ММ', unit:'шт', units:[['уп 24 шт',24]]},
+  {code:'FCTFL001732', cat:'Булочки', group:'bakery', name:'БУЛОЧКА ГРИБНАЯ 2026', unit:'шт', units:[['кор 48 шт',48]]},
+  {code:'FCTFL001170', cat:'Булочки', group:'bakery', name:'БУЛОЧКА ОРИГИНАЛЬНАЯ С ГЛАЗУРЬЮ', unit:'шт', units:[['кор 48 шт',48]]},
+  {code:'FCTFL000500', cat:'Булочки', group:'bakery', name:'БУЛОЧКА ПАНИНИ (Чиабатта)', unit:'шт', units:[['кор 24 шт',24]]},
+  // 9 Говядина
+  {code:'MEAT001182', cat:'Говядина', group:'meat', name:'КОТЛЕТА БИФШТЕКС', unit:'шт', units:[]},
+  // 10–20 Горячие безалк. напитки
+  {code:'BNACO000080', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП КЛАССИК ВАНИЛЬ', unit:'л', units:[['упаковка (6 л)',6]]},
+  {code:'BNACO000081', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП КЛАССИК КАРАМЕЛЬ', unit:'л', units:[['упак 6 л',6]]},
+  {code:'FCOSO001202', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП ОБЛЕПИХА', unit:'л', units:[]},
+  {code:'FCOSO001190', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП СО ВКУСОМ ХАЛВЫ', unit:'л', units:[['коробка (6 л)',6]]},
+  {code:'BTCTE10045-B', cat:'Горячие безалк. напитки', group:'drinks', name:'ЧАЙ ЗЕЛЕНЫЙ', unit:'шт', units:[['уп 300 шт',300], ['коробка (200 шт)',200]]},
+  {code:'BTCTE10044-B', cat:'Горячие безалк. напитки', group:'drinks', name:'ЧАЙ ЧЕРНЫЙ', unit:'шт', units:[['уп 300 шт',300], ['коробка (160 шт)',160], ['коробка (200 шт)',200]]},
+  {code:'BTCCF30053-B', cat:'Горячие безалк. напитки', group:'drinks', name:'КОФЕ ЖАРДИН НАТУРАЛЬНЫЙ ЖАРЕНЫЙ В ЗЕРНАХ', unit:'кг', units:[['уп 8 кг',8]]},
+  {code:'FGRCE000287', cat:'Горячие безалк. напитки', group:'drinks', name:'NEW DESIGN САХАР ПОРЦИОННЫЙ РОСТИКС', unit:'шт', units:[['уп 1000 шт',1000], ['коробка (2 000 шт)',2000], ['упаковка (2 500 шт)',2500]]},
+  {code:'FCOSO001562', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП КЛЕНОВЫЙ ПЕКАН', unit:'л', units:[['кор 6 л',6]]},
+  {code:'FCOSO001564', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП МАЛИНА-ЕЖЕВИКА', unit:'л', units:[['кор 6 л',6]]},
+  {code:'FCOSO001563', cat:'Горячие безалк. напитки', group:'drinks', name:'СИРОП ОБЛЕПИХА-МОРОШКА', unit:'л', units:[['кор 4 л',4]]},
+  // 21–48 Десерты
+  {code:'FHPHF74064-F', cat:'Десерты', group:'bakery', name:'(Не использовать) ПИРОЖОК МАЛИНА И СЛИВОЧНЫЙ СЫР', unit:'шт', units:[]},
+  {code:'BAKING001537', cat:'Десерты', group:'bakery', name:'ДОНАТ ГЛАЗИРОВАННЫЙ ВАНИЛЬ В ШОКОЛАДЕ', unit:'шт', units:[]},
+  {code:'BAKING001200', cat:'Десерты', group:'bakery', name:'ПИРОЖОК МАНГО-МАРАКУЙЯ-КРЕМЧИЗ', unit:'шт', units:[['коробка (128 шт)',128]]},
+  {code:'FCOSO50207-F', cat:'Десерты', group:'bakery', name:'СИРОП ВИТАМИКС ВАНИЛЬНЫЙ', unit:'кг', units:[['коробка (4,62 кг)',4.62], ['коробка (6,95 кг)',6.95], ['коробка (12 кг)',12]]},
+  {code:'FCOSO001559', cat:'Десерты', group:'bakery', name:'СИРОП ВИТАМИКС ДЫНЯ-АРБУЗ', unit:'кг', units:[['коробка (12 кг)',12]]},
+  {code:'FCOSO50208-F', cat:'Десерты', group:'bakery', name:'СИРОП ВИТАМИКС КЛУБНИЧНЫЙ', unit:'кг', units:[['кор 5.1 кг',5.1], ['коробка (7,73 кг)',7.73]]},
+  {code:'FCOSO50206-F', cat:'Десерты', group:'bakery', name:'СИРОП ВИТАМИКС ШОКОЛАДНО-ОРЕХОВЫЙ', unit:'кг', units:[['коробка (5,2 кг)',5.2], ['коробка (7,8 кг)',7.8], ['коробка (12 кг)',12]]},
+  {code:'FCOSO001558', cat:'Десерты', group:'bakery', name:'СИРОП ДЫНЯ-АРБУЗ ПАУЧ', unit:'кг', units:[]},
+  {code:'FCOSO50104-F', cat:'Десерты', group:'bakery', name:'СИРОП ШОКОЛАДНО-ОРЕХОВЫЙ', unit:'кг', units:[['коробка (12 кг)',12]]},
+  {code:'FCOSO000446', cat:'Десерты', group:'bakery', name:'ТОППИНГ ВИШНЕВЫЙ С КУСОЧКАМИ', unit:'кг', units:[['коробка (12 кг)',12], ['коробка (9 кг)',9]]},
+  {code:'FCOSO001560', cat:'Десерты', group:'bakery', name:'ТОППИНГ ФИСТАШКА', unit:'кг', units:[['коробка (12 кг)',12]]},
+  {code:'FCOSO50100-F', cat:'Десерты', group:'bakery', name:'СИРОП ВАНИЛЬНЫЙ', unit:'кг', units:[['упак 12 кг',12], ['коробка (21 кг)',21]]},
+  {code:'FCOSO50102-F', cat:'Десерты', group:'bakery', name:'СИРОП КЛУБНИЧНЫЙ', unit:'кг', units:[['упак 12 кг',12], ['коробка (21 кг)',21]]},
+  {code:'FCTPA30021-F', cat:'Десерты', group:'bakery', name:'ВАФЕЛЬНЫЙ СТАКАНЧИК', unit:'шт', units:[['уп 560 шт',560], ['коробка (520 шт)',520]]},
+  {code:'BAKING001205', cat:'Десерты', group:'bakery', name:'МАФФИН С КРЕМОМ ВАРЕНАЯ СГУЩЕНКА', unit:'шт', units:[['уп 20 шт',20]]},
+  {code:'BAKING001196', cat:'Десерты', group:'bakery', name:'ПИРОЖНОЕ ЧИЗКЕЙК СОЛЕНАЯ КАРАМЕЛЬ', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'FHPHF74061-F', cat:'Десерты', group:'bakery', name:'ПИРОЖОК ВИШНЕВЫЙ', unit:'шт', units:[['уп 128 шт',128]]},
+  {code:'BAKING001566', cat:'Десерты', group:'bakery', name:'ПИРОЖОК МАЛИНА-ЧИЗ', unit:'шт', units:[['кор 128 шт',128]]},
+  {code:'FMIMI50007-F', cat:'Десерты', group:'bakery', name:'СМЕСЬ МОЛОЧНАЯ ЖИДКАЯ УЛЬТРАПАСТЕРИЗОВАННАЯ ДЛЯ КОКТЕЙЛЯ 2.5', unit:'кг', units:[['кор 10.8 кг',10.8]]},
+  {code:'FCOSO000449', cat:'Десерты', group:'bakery', name:'ТОППИНГ ШОКОЛАДНЫЙ СОУС', unit:'кг', units:[['кор 5.36 кг',5.36], ['коробка (8 кг)',8]]},
+  {code:'FCOSO000448', cat:'Десерты', group:'bakery', name:'ТОППИНГ КАРАМЕЛЬНЫЙ СОУС', unit:'кг', units:[['кор 5.27 кг',5.27], ['коробка (8 кг)',8]]},
+  {code:'FCOSO000450', cat:'Десерты', group:'bakery', name:'ТОППИНГ КЛУБНИЧНЫЙ СОУС', unit:'кг', units:[['кор 5.25 кг',5.25], ['коробка (7,88 кг)',7.88]]},
+  {code:'BAKING001124', cat:'Десерты', group:'bakery', name:'МИНИ-МАФФИН С КРЕМОМ ВАРЕНАЯ СГУЩЕНКА', unit:'шт', units:[['кор 45 шт',45]]},
+  {code:'BAKING000078', cat:'Десерты', group:'bakery', name:'ДОНАТ ГЛАЗИРОВАННЫЙ КЛУБНИКА', unit:'шт', units:[['кор 32 шт',32]]},
+  {code:'BAKING001568', cat:'Десерты', group:'bakery', name:'ДОНАТ ГЛАЗИРОВАННЫЙ СОЛЕНАЯ КАРАМЕЛЬ', unit:'шт', units:[['кор 32 шт',32]]},
+  {code:'BAKING001233', cat:'Десерты', group:'bakery', name:'ПЕЧЕНЬЕ САХАРНОЕ: ПЕЧЕНЬЕ ЧЕРНЫЙ КАКАО', unit:'кг', units:[['кор 2 кг',2]]},
+  {code:'BAKING001123', cat:'Десерты', group:'bakery', name:'МИНИ-ТАРТ С КАРАМЕЛЬНО-АРАХИСОВОЙ НАЧИНКОЙ', unit:'шт', units:[['кор 24 шт',24]]},
+  {code:'FMIMI50010-F', cat:'Десерты', group:'bakery', name:'СМЕСЬ МОЛОЧНАЯ ЖИДКАЯ УЛЬТРАПАСТЕРИЗОВАННАЯ ДЛЯ МОРОЖЕНОГО 3', unit:'кг', units:[['кор 11.1 кг',11.1]]},
+  // 49–51 Картофель
+  {code:'FVGFR000003', cat:'Картофель', group:'veg', name:'Лук жареный', unit:'кг', units:[['упаковка (1 кг)',1]]},
+  {code:'FHPHF51019-F', cat:'Картофель', group:'veg', name:'КАРТОФЕЛЬ ФРИ 6/6 KFC', unit:'кг', units:[['упак 12.5 кг',12.5]]},
+  {code:'FHPHF51022-F', cat:'Картофель', group:'veg', name:'КАРТОФЕЛЬНЫЕ ДОЛЬКИ СО СПЕЦИЯМИ', unit:'кг', units:[['упак 12.5 кг',12.5]]},
+  // 52–58 Курица
+  {code:'FHPHF14098-F', cat:'Курица', group:'meat', name:'БАЙТСЫ ETC', unit:'кг', units:[]},
+  {code:'FHPHF14076-F', cat:'Курица', group:'meat', name:'ГОЛЕНЬ В МАРИНАДЕ', unit:'шт', units:[['упак 108 шт',108]]},
+  {code:'FHPHF14045-F', cat:'Курица', group:'meat', name:'ФИЛЕ КУРИНОЕ МАЛОЕ ОСТРОЕ', unit:'шт', units:[['уп 288 шт',288]]},
+  {code:'FHPHF14034-F', cat:'Курица', group:'meat', name:'ФИЛЕ ЗИНГЕР КУРИНОЕ', unit:'шт', units:[['уп 144 шт',144]]},
+  {code:'FHPHF14033-F', cat:'Курица', group:'meat', name:'ФИЛЕ КЛАССИК КУРИНОЕ', unit:'шт', units:[['уп 144 шт',144]]},
+  {code:'FHPHF14044-F', cat:'Курица', group:'meat', name:'ФИЛЕ КУРИНОЕ МАЛОЕ', unit:'шт', units:[['кор 216 шт',216]]},
+  {code:'FHPHF14035-F', cat:'Курица', group:'meat', name:'КРЫЛЬЯ ОСТРЫЕ КУРИНЫЕ', unit:'шт', units:[['кор 400 шт',400]]},
+  // 59 Масло фритюрное
+  {code:'FOIEF20000-F', cat:'Масло фритюрное', group:'pantry', name:'МАСЛО ФРИТЮРНОЕ', unit:'кг', units:[['кор 6.9 кг',6.9]]},
+  // 60 Молоко
+  {code:'FMIMI10015-F', cat:'Молоко', group:'pantry', name:'МОЛОКО УЛЬТРАПАСТЕРИЗОВАННОЕ 1,5%', unit:'л', units:[['уп 12 л',12]]},
+  // 61 Мука
+  {code:'FGRFL10015-F', cat:'Мука', group:'pantry', name:'МУКА ДЛЯ ПАНИРОВКИ', unit:'кг', units:[['уп 11.34 кг',11.34]]},
+  // 62–67 Наггетсы и котлеты
+  {code:'SHRIMP001544', cat:'Наггетсы и котлеты', group:'meat', name:'КОТЛЕТА КРАБОВАЯ В ТЕМПУРЕ', unit:'шт', units:[['коробка (150 шт)',150]]},
+  {code:'SHRIMP000504', cat:'Наггетсы и котлеты', group:'meat', name:'КРЕВЕТКА БЕЛОНОГАЯ ОЧИЩЕННАЯ В ПАНИРОВКЕ', unit:'кг', units:[['уп 10 кг',10]]},
+  {code:'FHPHF001091', cat:'Наггетсы и котлеты', group:'meat', name:'НАГГЕТСЫ В ТЕМПУРЕ', unit:'шт', units:[['кор 700 шт',700]]},
+  {code:'FCTPA000089', cat:'Наггетсы и котлеты', group:'meat', name:'СЫРНЫЕ ПАЛОЧКИ В ПАНИРОВКЕ', unit:'шт', units:[['кор 320 шт',320], ['коробка (160 шт)',160]]},
+  {code:'FHPHF000071', cat:'Наггетсы и котлеты', group:'meat', name:'КОТЛЕТА КУРИНАЯ ЗАМОРОЖЕННАЯ В КГ', unit:'кг', units:[['кор 12 кг',12]]},
+  {code:'FMICH000025', cat:'Наггетсы и котлеты', group:'meat', name:'КОТЛЕТА СЫРНАЯ ЗАМОРОЖЕННАЯ В КГ 10%', unit:'кг', units:[['кор 10 кг',10]]},
+  // 68–75 Овощи
+  {code:'FVGFR001735', cat:'Овощи', group:'veg', name:'ГРИБЫ ОПЯТА МАРИНОВАННЫЕ', unit:'кг', units:[['коробка (2,4 кг)',2.4]]},
+  {code:'FCTPA000493', cat:'Овощи', group:'veg', name:'ЧИПСЫ НОРИ NAITORI С ОЛИВКОВЫМ МАСЛОМ', unit:'кг', units:[]},
+  {code:'FCOVG18003-F', cat:'Овощи', group:'veg', name:'ОГУРЦЫ МАРИНОВАННЫЕ ПИКАНТНЫЕ', unit:'кг', units:[['уп 8.7 кг',8.7]]},
+  {code:'FVGFR20154-F', cat:'Овощи', group:'veg', name:'ЛУК РЕПЧАТЫЙ КОЛЬЦО 20% НДС', unit:'кг', units:[['уп 0.5 кг',0.5], ['упаковка (1 кг)',1]]},
+  {code:'FVGFR000247', cat:'Овощи', group:'veg', name:'САЛАТНАЯ СМЕСЬ КОУЛ СЛОУ 20% Новая', unit:'кг', units:[['уп 0.5 кг',0.5], ['коробка (1 кг)',1]]},
+  {code:'FVGFR001734', cat:'Овощи', group:'veg', name:'РУККОЛА СВЕЖАЯ', unit:'кг', units:[['уп 0.05 кг',0.05], ['упаковка (0,5 кг)',0.5]]},
+  {code:'FHPHF52021-F', cat:'Овощи', group:'veg', name:'САЛАТ АЙСБЕРГ КРУПНАЯ НАРЕЗКА 20%', unit:'кг', units:[['кг 1',1]]},
+  {code:'FVGFR70000-F', cat:'Овощи', group:'veg', name:'ТОМАТЫ ЦЕЛЫЕ СВЕЖИЕ МЫТЫЕ', unit:'кг', units:[['кг 1',1], ['коробка (5 кг)',5]]},
+  // 76–79 Панировочные смеси
+  {code:'FGRFL70007-F', cat:'Панировочные смеси', group:'pantry', name:'ПАНИРОВОЧНАЯ СМЕСЬ H&S', unit:'кг', units:[['уп 9.9 кг',9.9], ['коробка (11,88 кг)',11.88]]},
+  {code:'FGRSP10047-F', cat:'Панировочные смеси', group:'pantry', name:'СМЕСЬ ЯИЧНО-МОЛОЧНАЯ', unit:'кг', units:[['уп 8.16 кг',8.16]]},
+  {code:'FGRSP001280', cat:'Панировочные смеси', group:'pantry', name:'ПАНИРОВОЧНАЯ СМЕСЬ ОПТИСПАЙС ФРАЙД ЧИКЕН', unit:'кг', units:[['кор 7.26 кг',7.26], ['коробка (7,62 кг)',7.62]]},
+  {code:'FGRSP001281', cat:'Панировочные смеси', group:'pantry', name:'ПАНИРОВОЧНАЯ СМЕСЬ ПРИПРАВА СМЕСЬ ПЕРЦЕВ', unit:'кг', units:[['кор 3.65 кг',3.65]]},
+  // 80–85 Промо
+  {code:'KFCLVI88001598', cat:'Промо', group:'promo', name:'ИГРУШКА БРЕЛОК ХОНКАЙ', unit:'шт', units:[['коробка (200 шт)',200]]},
+  {code:'KFCLVI88001593', cat:'Промо', group:'promo', name:'ИГРУШКА КОСМО', unit:'шт', units:[['коробка (200 шт)',200]]},
+  {code:'KFCLVI88001759', cat:'Промо', group:'promo', name:'ИГРУШКА МИНЬОН', unit:'шт', units:[['коробка (120 шт)',120]]},
+  {code:'KFCLVI88001595', cat:'Промо', group:'promo', name:'ИГРУШКИ СОЮЗМУЛЬТФИЛЬМ', unit:'шт', units:[['коробка (120 шт)',120]]},
+  {code:'KFCLVI88001760', cat:'Промо', group:'promo', name:'ИГРУШКА КАПИБАРЧИК', unit:'шт', units:[]},
+  {code:'KFCLVI88001596', cat:'Промо', group:'promo', name:'ИГРУШКИ МИМИМИШКИ', unit:'шт', units:[['кор 120 шт',120]]},
+  // 86–87 Соль
+  {code:'FGRSP000437', cat:'Соль', group:'pantry', name:'NEW_DESIGN СОЛЬ ФАСОВАННАЯ БЕЗ ЛОГО', unit:'шт', units:[['коробка (1 000 шт)',1000], ['коробка (2 500 шт)',2500]]},
+  {code:'FGRSP20025-F', cat:'Соль', group:'pantry', name:'СОЛЬ ПАНИРОВОЧНАЯ "Экстра" KFC', unit:'кг', units:[['кор 10 кг',10], ['коробка (11,62 кг)',11.62], ['коробка (16,2 кг)',16.2]]},
+  // 88–99 Соусы в КГ
+  {code:'FCOSO001545', cat:'Соусы в КГ', group:'sauce', name:'СОУС ПАРМЕЗАН', unit:'кг', units:[['коробка (6 кг)',6]]},
+  {code:'FCOSO001546', cat:'Соусы в КГ', group:'sauce', name:'СОУС ВОСТОЧНЫЙ 2026', unit:'кг', units:[]},
+  {code:'FGRNU10005', cat:'Соусы в КГ', group:'sauce', name:'КУНЖУТ ЖАРЕНЫЙ', unit:'кг', units:[['упак 1.5 кг',1.5]]},
+  {code:'FCOSO10159-F', cat:'Соусы в КГ', group:'sauce', name:'СОУС ГОРЧИЧНЫЙ ХАЙНЦ', unit:'кг', units:[['уп 6 кг',6], ['коробка (10 кг)',10]]},
+  {code:'FCOSO10179-F', cat:'Соусы в КГ', group:'sauce', name:'СОУС НА ОСНОВЕ РАСТИТЕЛЬНЫХ МАСЕЛ БУРГЕР', unit:'кг', units:[['уп 6 кг',6], ['коробка (10 кг)',10], ['коробка (8,88 кг)',8.88]]},
+  {code:'FCOSO10166', cat:'Соусы в КГ', group:'sauce', name:'СОУС ДЕЛИКАТЕСНЫЙ ТЕРИЯКИ', unit:'кг', units:[['уп 4.5 кг',4.5], ['коробка (4,9 кг)',4.9]]},
+  {code:'FCOSO30039-F', cat:'Соусы в КГ', group:'sauce', name:'СОУС МАЙОНЕЗНЫЙ "ЛЕГКИЙ" 28%', unit:'кг', units:[['уп 4.5 кг',4.5], ['коробка (10 кг)',10], ['коробка (6 кг)',6]]},
+  {code:'FCOSO001354', cat:'Соусы в КГ', group:'sauce', name:'СОУС КУЛИНАРНЫЙ ОСТРЫЙ PIKADOR', unit:'кг', units:[['кор 6 кг',6]]},
+  {code:'FCOSO001733', cat:'Соусы в КГ', group:'sauce', name:'СОУС ЖЮЛЬЕН', unit:'кг', units:[['кор 6 кг',6]]},
+  {code:'FCOSO20006-F', cat:'Соусы в КГ', group:'sauce', name:'КЕТЧУП ХАЙНЦ', unit:'кг', units:[['кор 6.4 кг',6.4], ['коробка (9 кг)',9], ['коробка (5 кг)',5]]},
+  {code:'FCOSO10180-F', cat:'Соусы в КГ', group:'sauce', name:'СОУС НА ОСНОВЕ РАСТИТЕЛЬНЫХ МАСЕЛ ЦЕЗАРЬ ОРИГИНАЛЬНЫЙ', unit:'кг', units:[['кор 4.5 кг',4.5], ['коробка (10,5 кг)',10.5], ['коробка (6 кг)',6], ['коробка (10 кг)',10], ['коробка (8,88 кг)',8.88], ['коробка (5 кг)',5]]},
+  {code:'FCOSO000140', cat:'Соусы в КГ', group:'sauce', name:'СОУС БУРГЕР КЛАССИЧЕСКИЙ', unit:'кг', units:[['кор 10.5 кг',10.5], ['коробка (6 кг)',6], ['коробка (10 кг)',10]]},
+  // 100–106 Соусы порционные
+  {code:'FCOSO001271', cat:'Соусы порционные', group:'sauce', name:'СОУС СЫРНЫЙ ЧИЛИ ФИРМЕННЫЙ PIKADOR ДИП-ПОТ', unit:'шт', units:[]},
+  {code:'FCOSO10161-F', cat:'Соусы порционные', group:'sauce', name:'БАРБЕКЬЮ СОУС ХАЙНЦ ОРИГИНАЛЬНЫЙ ПОРЦИОННЫЙ', unit:'шт', units:[['уп 147 шт',147], ['коробка (125 шт)',125]]},
+  {code:'FCOSO20044-F', cat:'Соусы порционные', group:'sauce', name:'КЕТЧУП ТОМАТНЫЙ ХАЙНЦ ПОРЦИОННЫЙ', unit:'шт', units:[['уп 147 шт',147], ['коробка (125 шт)',125], ['коробка (216 шт)',216]]},
+  {code:'FCOSO10169-F', cat:'Соусы порционные', group:'sauce', name:'СОУС ДЕЛИКАТЕСНЫЙ КИСЛО-СЛАДКИЙ ЧИЛИ ДИП-ПОТ 25 МЛ ХАЙНЦ', unit:'шт', units:[['уп 147 шт',147], ['коробка (125 шт)',125], ['коробка (216 шт)',216]]},
+  {code:'FCOSO10168-F', cat:'Соусы порционные', group:'sauce', name:'СОУС ТЕРИЯКИ ДИП-ПОТ 25 МЛ ХАЙНЦ', unit:'шт', units:[['уп 147 шт',147], ['коробка (125 шт)',125], ['коробка (216 шт)',216]]},
+  {code:'FCOSO10165-F', cat:'Соусы порционные', group:'sauce', name:'СЫРНЫЙ СОУС ХАЙНЦ ОРИГИНАЛЬНЫЙ ПОРЦИОННЫЙ', unit:'шт', units:[['уп 147 шт',147], ['коробка (125 шт)',125], ['коробка (216 шт)',216]]},
+  {code:'FCOSO10162-F', cat:'Соусы порционные', group:'sauce', name:'ЧЕСНОЧНЫЙ СОУС ХАЙНЦ ОРИГИНАЛЬНЫЙ ПОРЦИОННЫЙ', unit:'шт', units:[['уп 147 шт',147], ['коробка (125 шт)',125], ['коробка (216 шт)',216]]},
+  // 107 Сыр
+  {code:'FMICH11001-F', cat:'Сыр', group:'pantry', name:'СЫР ХОХЛАНД', unit:'шт', units:[['уп 960 шт',960]]},
+  // 108–111 Тортильи
+  {code:'FCTFL001550', cat:'Тортильи', group:'bakery', name:'ТОРТИЛЬЯ ЛЕПЕШКА РОТИ', unit:'шт', units:[]},
+  {code:'FCTFL30031-F', cat:'Тортильи', group:'bakery', name:'ПШЕНИЧНАЯ ТОРТИЛЬЯ 10,5-Д ЗАМОРОЖЕННАЯ', unit:'шт', units:[['упак 192 шт',192], ['коробка (120 шт)',120]]},
+  {code:'FCTFL30035-F', cat:'Тортильи', group:'bakery', name:'ТОРТИЛЬЯ ПШЕНИЧНАЯ СО ВКУСОМ СЫРА 8D', unit:'шт', units:[['упак 192 шт',192], ['коробка (120 шт)',120]]},
+  {code:'FCTFL000182', cat:'Тортильи', group:'bakery', name:'ТОРТИЛЬЯ ПШЕНИЧНАЯ 12Д', unit:'шт', units:[['уп 72 шт',72]]},
+  // 112–164 Упаковка Rostics
+  {code:'EPAPE-P88001517', cat:'Упаковка Rostics', group:'pack', name:'NEW_DESIGN БУМАГА УПАКОВОЧНАЯ ЖИРОНЕПРОНИЦАЕМАЯ БЕЛАЯ', unit:'шт', units:[['коробка (1 000 шт)',1000]]},
+  {code:'EPAPE-ERO-P88000314', cat:'Упаковка Rostics', group:'pack', name:'БУМАГА КРАСНАЯ', unit:'шт', units:[['коробка (1 000 шт)',1000], ['коробка (3 000 шт)',3000]]},
+  {code:'EPAPE-PC001587', cat:'Упаковка Rostics', group:'pack', name:'КЛАМШЕЛЛ ОСОБАЯ СЕРИЯ', unit:'шт', units:[['коробка (360 шт)',360]]},
+  {code:'EPAPE-PC001761', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА ДЕТСКОЕ КОМБО МИНЬОНБУМ', unit:'шт', units:[]},
+  {code:'EPAPE-PC001603', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА ДЕТСКОЕ КОМБО СОЮЗМУЛЬТФИЛЬМ', unit:'шт', units:[['коробка (100 шт)',100]]},
+  {code:'EPAPE-PC001606', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА ДЕТСКОЕ КОМБО ХОНКАЙ', unit:'шт', units:[['коробка (100 шт)',100]]},
+  {code:'ESEMX14079-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'КРЫШКА ДЛЯ СТАКАНА МОХИТО', unit:'шт', units:[['коробка (1 000 шт)',1000], ['коробка (800 шт)',800]]},
+  {code:'EPAPE-ERO-P88000263', cat:'Упаковка Rostics', group:'pack', name:'ПАКЕТ УГОЛОК РОСТИКС', unit:'шт', units:[['коробка (2 000 шт)',2000], ['коробка (2 500 шт)',2500]]},
+  {code:'EPAPE-ERO-PС000310', cat:'Упаковка Rostics', group:'pack', name:'ПАЧКА МЕГА РОЛЛ РОСТИКС', unit:'шт', units:[['коробка (500 шт)',500]]},
+  {code:'ESEMX-PL001071', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ МОРОЖЕНОГО', unit:'шт', units:[['коробка (1 000 шт)',1000]]},
+  {code:'ESEMX-ERO-PL000280', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ ХОЛОДНЫХ НАПИТКОВ 0.25Л МИЛКШЕЙК', unit:'шт', units:[['коробка (1 520 шт)',1520], ['коробка (800 шт)',800]]},
+  {code:'ESEMX-ERO-PL000281', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ ХОЛОДНЫХ НАПИТКОВ 0.4Л МИЛКШЕЙК', unit:'шт', units:[['коробка (1 000 шт)',1000]]},
+  {code:'ESEMX45037-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ПРОЗРАЧНЫЙ 200МЛ ДЛЯ МОРОЖЕНОГО', unit:'шт', units:[['коробка (2 000 шт)',2000], ['коробка (1 000 шт)',1000], ['упаковка (50 шт)',50]]},
+  {code:'ESEMX-ERO-PL000311', cat:'Упаковка Rostics', group:'pack', name:'Стакан-шейкер Мохито', unit:'шт', units:[['коробка (1 000 шт)',1000]]},
+  {code:'EPAPE-PA001744', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА БАБЛ НАПИТКИ', unit:'шт', units:[['упаковка (500 шт)',500]]},
+  {code:'EPAPE-ERO-PA000340', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА БЕЛАЯ', unit:'шт', units:[['упаковка (300 шт)',300]]},
+  {code:'EPAPE-PA001577', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ГОВЯДИНА', unit:'шт', units:[['упаковка (1 000 шт)',1000]]},
+  {code:'EPAPE-PA001782', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА КЛЕНОВЫЙ ПЕКАН', unit:'шт', units:[['упаковка (500 шт)',500]]},
+  {code:'EPAPE-PA001580', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА КОФЕ ХАЛВА', unit:'шт', units:[['упаковка (1 000 шт)',1000]]},
+  {code:'EPAPE-ERO-PA000341', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА КРАСНАЯ', unit:'шт', units:[['упаковка (300 шт)',300]]},
+  {code:'EPAPE-PA001092', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА КРЕВЕТКА', unit:'шт', units:[['коробка (3 000 шт)',3000]]},
+  {code:'EPAPE-PA001783', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА МАЛИНА-ЕЖЕВИКА', unit:'шт', units:[['упаковка (500 шт)',500]]},
+  {code:'EPAPE-PC001601', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА ДЕТСКОЕ КОМБО КОСМО', unit:'шт', units:[['коробка (140 шт)',140]]},
+  {code:'EPAPE-PA001326', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ВАНИЛЬ', unit:'шт', units:[['уп 1000 шт',1000], ['упаковка (500 шт)',500]]},
+  {code:'EPAPE-PA001327', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА КАРАМЕЛЬ', unit:'шт', units:[['уп 1000 шт',1000], ['упаковка (500 шт)',500]]},
+  {code:'ESEMX61006-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'ВИЛКА БЕЛАЯ', unit:'шт', units:[['уп 50 шт',50], ['коробка (3 000 шт)',3000], ['коробка (2 000 шт)',2000], ['коробка (1 000 шт)',1000], ['упаковка (100 шт)',100]]},
+  {code:'ESEMX62009-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'ЛОЖКА ЧАЙНАЯ БЕЛАЯ', unit:'шт', units:[['уп 50 шт',50], ['коробка (1 000 шт)',1000], ['коробка (2 000 шт)',2000], ['коробка (4 000 шт)',4000], ['коробка (2 500 шт)',2500], ['упаковка (100 шт)',100], ['упаковка (250 шт)',250]]},
+  {code:'EPAPE-PA001784', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ОБЛЕПИХА-МОРОШКА', unit:'шт', units:[['уп 500 шт',500]]},
+  {code:'EPAPE-PA001718', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ОСОБЫЙ ВКУС', unit:'шт', units:[['уп 500 шт',500]]},
+  {code:'EPAPE-PA001515', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ОСТРОЕ', unit:'шт', units:[['уп 500 шт',500]]},
+  {code:'EPAPE-PC001111', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА ДЛЯ КУРИНОГО КОМБО', unit:'шт', units:[['уп 50 шт',50]]},
+  {code:'EPAPE-ERO-PA000342', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ДЖУНИОР', unit:'шт', units:[['уп 3000 шт',3000], ['упаковка (300 шт)',300]]},
+  {code:'EPAPE-ERO-PA000339', cat:'Упаковка Rostics', group:'pack', name:'ЭТИКЕТКА ЧЕРНАЯ', unit:'шт', units:[['уп 3000 шт',3000], ['упаковка (300 шт)',300]]},
+  {code:'EPAPE-ERO-P88000317', cat:'Упаковка Rostics', group:'pack', name:'БУМАГА ОСОБАЯ СЕРИЯ', unit:'шт', units:[['уп 1000 шт',1000]]},
+  {code:'EPAPE-ERO-P88000316', cat:'Упаковка Rostics', group:'pack', name:'БУМАГА УНИВЕРСАЛЬНАЯ КРАСНО-БЕЛАЯ', unit:'шт', units:[['уп 1000 шт',1000], ['коробка (3 000 шт)',3000]]},
+  {code:'EPAPE-ERO-P88000518', cat:'Упаковка Rostics', group:'pack', name:'БУМАГА ШЕФБУРГЕР 4SKU', unit:'шт', units:[['уп 1000 шт',1000]]},
+  {code:'EPAPE-ERO-PС000272', cat:'Упаковка Rostics', group:'pack', name:'ПАЧКА ШЕФ РОЛЛ', unit:'шт', units:[['кор 600 шт',600]]},
+  {code:'EPAPE-ERO-PС000269', cat:'Упаковка Rostics', group:'pack', name:'ПАЧКА РОСТ МАСТЕР', unit:'шт', units:[['кор 550 шт',550]]},
+  {code:'EPAPE12048-ERO-PA', cat:'Упаковка Rostics', group:'pack', name:'САЛФЕТКИ БУМАЖНЫЕ БЕЛЫЕ', unit:'шт', units:[['кор 5000 шт',5000], ['коробка (500 шт)',500], ['коробка (4 800 шт)',4800], ['коробка (11 250 шт)',11250]]},
+  {code:'ESEMX-ERO-PL000284', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ ГОРЯЧИХ НАПИТКОВ 0.4Л', unit:'шт', units:[['кор 500 шт',500], ['коробка (480 шт)',480], ['коробка (700 шт)',700]]},
+  {code:'EPAPE-ERO-P88000265', cat:'Упаковка Rostics', group:'pack', name:'ПАКЕТ ДЛЯ КАРТОШКИ МАЛЫЙ', unit:'шт', units:[['кор 4000 шт',4000], ['коробка (5 000 шт)',5000]]},
+  {code:'EPAPE-ERO-P88000266', cat:'Упаковка Rostics', group:'pack', name:'ПАКЕТ ДЛЯ КАРТОШКИ СРЕДНИЙ', unit:'шт', units:[['кор 4000 шт',4000]]},
+  {code:'EPAPE-ERO-PС000278', cat:'Упаковка Rostics', group:'pack', name:'ВЕДРО БОЛЬШОЕ', unit:'шт', units:[['кор 200 шт',200]]},
+  {code:'ESEMX14084-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'КРЫШКА ДЛЯ ГОРЯЧИХ НАПИТКОВ 0.2Л', unit:'шт', units:[['кор 1000 шт',1000]]},
+  {code:'EPAPE-ERO-PA000286', cat:'Упаковка Rostics', group:'pack', name:'САЛФЕТКА ВЛАЖНАЯ РОСТИКС', unit:'шт', units:[['кор 1000 шт',1000], ['коробка (2 000 шт)',2000]]},
+  {code:'ESEMX41021-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ ПИВА 0.5Л', unit:'шт', units:[['кор 900 шт',900], ['коробка (1 200 шт)',1200]]},
+  {code:'ESEMX69050-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'ТРУБОЧКИ ДЛЯ МИЛКШЕЙКОВ (бело-красная)', unit:'шт', units:[['кор 800 шт',800], ['коробка (5 500 шт)',5500], ['упаковка (500 шт)',500]]},
+  {code:'EPAPE-ERO-PС000268', cat:'Упаковка Rostics', group:'pack', name:'ПАЧКА ПИРОЖОК УНИВЕРСАЛЬНЫЙ', unit:'шт', units:[['кор 700 шт',700], ['коробка (500 шт)',500]]},
+  {code:'EPAPE-PC001586', cat:'Упаковка Rostics', group:'pack', name:'ПАЧКА РОЛЛ ОСОБАЯ СЕРИЯ', unit:'шт', units:[['кор 600 шт',600]]},
+  {code:'ESEMX-ERO-PL000283', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ ГОРЯЧИХ НАПИТКОВ 0.3Л', unit:'шт', units:[['кор 600 шт',600], ['коробка (800 шт)',800]]},
+  {code:'EPAPE-ERO-PС000276', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА УНИВЕРСАЛЬНАЯ МАЛАЯ', unit:'шт', units:[['кор 500 шт',500], ['коробка (1 120 шт)',1120]]},
+  {code:'ESEMX14088-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'КРЫШКА ДЛЯ МОРОЖЕНОГО', unit:'шт', units:[['кор 500 шт',500], ['коробка (2 400 шт)',2400]]},
+  {code:'ESEMX-PL001437', cat:'Упаковка Rostics', group:'pack', name:'ТРУБОЧКИ ДЛЯ Bubble Tea', unit:'шт', units:[['кор 500 шт',500]]},
+  {code:'EPAPE-ERO-PС000279', cat:'Упаковка Rostics', group:'pack', name:'ВЕДРО МАЛОЕ', unit:'шт', units:[['кор 468 шт',468], ['коробка (460 шт)',460], ['коробка (760 шт)',760]]},
+  {code:'EPAPE-ERO-PС000275', cat:'Упаковка Rostics', group:'pack', name:'КЛАМШЕЛЛ УНИВЕРСАЛЬНЫЙ', unit:'шт', units:[['кор 405 шт',405], ['коробка (400 шт)',400]]},
+  {code:'EPAPE-ERO-PС000277', cat:'Упаковка Rostics', group:'pack', name:'КЛАМШЕЛЛ УНИВЕРСАЛЬНЫЙ СНЕКИ', unit:'шт', units:[['кор 405 шт',405], ['коробка (400 шт)',400]]},
+  {code:'ESEMX-ERO-PL000282', cat:'Упаковка Rostics', group:'pack', name:'СТАКАН ДЛЯ ГОРЯЧИХ НАПИТКОВ 0.2Л', unit:'шт', units:[['кор 400 шт',400], ['коробка (660 шт)',660]]},
+  {code:'EPAPE-ERO-PС000274', cat:'Упаковка Rostics', group:'pack', name:'КЛАМШЕЛЛ БОЛЬШОЙ УНИВЕРСАЛЬНЫЙ', unit:'шт', units:[['кор 350 шт',350], ['коробка (300 шт)',300], ['коробка (360 шт)',360]]},
+  {code:'EPAPE-ERO-PС000271', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА БОЛЬШАЯ УНИВЕРСАЛЬНАЯ', unit:'шт', units:[['кор 250 шт',250], ['коробка (360 шт)',360], ['коробка (500 шт)',500]]},
+  {code:'EPAPE-ERO-PС000270', cat:'Упаковка Rostics', group:'pack', name:'БАСКЕТ ВЕРХ', unit:'шт', units:[['кор 1400 шт',1400]]},
+  {code:'ESEMX14083-ERO-PL', cat:'Упаковка Rostics', group:'pack', name:'КРЫШКА ДЛЯ ГОРЯЧИХ НАПИТКОВ 0.3-0.4', unit:'шт', units:[['кор 1200 шт',1200], ['коробка (1 000 шт)',1000]]},
+  {code:'EPAPE-PC001708', cat:'Упаковка Rostics', group:'pack', name:'КОРОБКА КАРТОННАЯ ДЕТСКОЕ КОМБО УНИВЕРСАЛЬНАЯ', unit:'шт', units:[['кор 100 шт',100]]},
+  {code:'EPAPE-ERO-P88000519', cat:'Упаковка Rostics', group:'pack', name:'БУМАГА ЧИЗБУРГЕР МАЭСТРО 4SKU', unit:'шт', units:[['кор 1000 шт',1000]]},
+  // Упаковка ИВЛ
+  {code:'EPAPE-PC001572', cat:'Упаковка ИВЛ', group:'pack', name:'РАЗДЕЛИТЕЛЬ СРЕДНИЙ ДЛЯ ВЕДЕР', unit:'шт', units:[['коробка (1 000 шт)',1000], ['коробка (4 500 шт)',4500]]},
+  {code:'ESEMX69047-ERO-PL', cat:'Упаковка ИВЛ', group:'pack', name:'ЛОПАТКА 160ММ ДЛЯ ХОЛ. и ГОР. НАПИТКОВ', unit:'шт', units:[['уп 1000 шт',1000], ['коробка (8 000 шт)',8000], ['упаковка (500 шт)',500]]},
+  {code:'EPAPE-PC001112', cat:'Упаковка ИВЛ', group:'pack', name:'РАЗДЕЛИТЕЛЬ МАЛЫЙ ДЛЯ ВЕДЕР', unit:'шт', units:[['кор 950 шт',950]]},
+  {code:'EPAPE11086-ERO-PC', cat:'Упаковка ИВЛ', group:'pack', name:'РАЗДЕЛИТЕЛЬ ДЛЯ ВЕДЕР', unit:'шт', units:[['кор 600 шт',600]]},
+  // Упаковка Пепси
+  {code:'ESEMX14077-ERO-PL', cat:'Упаковка Пепси', group:'pack', name:'КРЫШКА ДЛЯ СТАКАНА ПЕПСИ 0,8Л', unit:'шт', units:[['упаковка (85 шт)',85]]},
+  {code:'ESEMX69046-ERO-PL', cat:'Упаковка Пепси', group:'pack', name:'ТРУБОЧКИ ПЕПСИ (бело-синяя)', unit:'шт', units:[['упаковка (1 000 шт)',1000]]},
+  {code:'ESEMX-ERO-PL000491', cat:'Упаковка Пепси', group:'pack', name:'Стакан 300мл Evervess', unit:'шт', units:[['упак 100 шт',100]]},
+  {code:'ESEMX-ERO-PL000492', cat:'Упаковка Пепси', group:'pack', name:'Стакан 400мл Evervess', unit:'шт', units:[['уп 50 шт',50]]},
+  {code:'ESEMX-ERO-PL000334', cat:'Упаковка Пепси', group:'pack', name:'Стакан 500мл Evervess', unit:'шт', units:[['уп 50 шт',50]]},
+  {code:'ESEMX-ERO-PL000335', cat:'Упаковка Пепси', group:'pack', name:'Стакан 800мл Evervess', unit:'шт', units:[['уп 50 шт',50]]},
+  {code:'ESEMX14076-ERO-PL', cat:'Упаковка Пепси', group:'pack', name:'КРЫШКА ДЛЯ СТАКАНА ПЕПСИ 0,4/0,5Л', unit:'шт', units:[['уп 150 шт',150]]},
+  // Холодные безалк. напитки
+  {code:'BNACO90001-B', cat:'Холодные безалк. напитки', group:'drinks', name:'СИРОП ДЛЯ ПРИГОТОВЛЕНИЯ ЧАЯ ЛИПТОН ЛИМОН', unit:'л', units:[]},
+  {code:'FCOSO001556', cat:'Холодные безалк. напитки', group:'drinks', name:'СИРОП ЦИТРУС-МАРАКУЙЯ', unit:'л', units:[]},
+  {code:'FCOSO001557', cat:'Холодные безалк. напитки', group:'drinks', name:'СИРОП КЛУБНИКА-ТАРХУН', unit:'л', units:[]},
+  {code:'BVJJU50081-B', cat:'Холодные безалк. напитки', group:'drinks', name:'Дж7 Сок Ябл Осв 0.2л БЗ 27Х ДП', unit:'шт', units:[['уп 27 шт',27]]},
+  {code:'BNACO000403', cat:'Холодные безалк. напитки', group:'drinks', name:'СИРОП ПОСТМИКС ЭВЕРВЕСС КОЛА БИБ', unit:'л', units:[['уп 20 л',20], ['упаковка (10 л)',10]]},
+  {code:'BNAWT10092-B', cat:'Холодные безалк. напитки', group:'drinks', name:'ВОДА АКВА МИНЕРАЛЕ С ГАЗОМ 0.5Л МАРК', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'BNASD000485', cat:'Холодные безалк. напитки', group:'drinks', name:'ЧАЙ ЧЕРНЫЙ ЛИПТОН СО ВКУСОМ ЛИМОНА 0,5Л ПЭТ', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'BNAWT10095-B', cat:'Холодные безалк. напитки', group:'drinks', name:'ВОДА АКВА МИНЕРАЛЕ АКТИВ ЦИТРУС 0,5', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'BNACO000424', cat:'Холодные безалк. напитки', group:'drinks', name:'НАПИТОК ЭВЕРВЕСС КОЛА ПЭТ', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'BNASD000486', cat:'Холодные безалк. напитки', group:'drinks', name:'ЧАЙ ЗЕЛЕНЫЙ ЛИПТОН 0,5Л ПЭТ', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'BNAWT10093-B', cat:'Холодные безалк. напитки', group:'drinks', name:'ВОДА АКВА МИНЕРАЛЕ БЕЗ ГАЗА 0.5Л МАРК', unit:'шт', units:[['уп 12 шт',12]]},
+  {code:'BNACO90002-B', cat:'Холодные безалк. напитки', group:'drinks', name:'СИРОП ДЛЯ ПРИГОТОВЛЕНИЯ ЧАЯ ЛИПТОН, ЗЕЛЕНЫЙ', unit:'л', units:[['уп 10 л',10]]},
+  {code:'BNACO000426', cat:'Холодные безалк. напитки', group:'drinks', name:'КОНЦЕНТРАТ FRUSTYLE АПЕЛЬСИН БИБ', unit:'л', units:[['уп 10 л',10]]},
+  {code:'BNACO000427', cat:'Холодные безалк. напитки', group:'drinks', name:'КОНЦЕНТРАТ FRUSTYLE ЛИМОН ЛАЙМ БИБ', unit:'л', units:[['уп 10 л',10]]},
+  {code:'BNACO001160', cat:'Холодные безалк. напитки', group:'drinks', name:'КОНЦЕНТРАТ ЭВЕРВЕСС КОЛА БЕЗ САХАРА БИБ', unit:'л', units:[['уп 10 л',10]]},
+  {code:'FCOSO001400', cat:'Холодные безалк. напитки', group:'drinks', name:'СИРОП САХАРНЫЙ ШАРИКИ "ПОППИНГ" МАНГО', unit:'кг', units:[['кор 12 кг',12], ['коробка (10 кг)',10]]}
+];
+
+/* ═══════════════════════════════════════
+   STORAGE
+═══════════════════════════════════════ */
+function getRows(loc,pid,uIdx){ const r=localStorage.getItem(`inv_${loc}_${pid}_${uIdx}`); return r?JSON.parse(r):[null]; }
+function setRows(loc,pid,uIdx,rows){ localStorage.setItem(`inv_${loc}_${pid}_${uIdx}`, JSON.stringify(rows)); }
+function getCU(loc,pid){ const r=localStorage.getItem(`cu_${loc}_${pid}`); return r?JSON.parse(r):[]; }
+function setCU(loc,pid,cu){ localStorage.setItem(`cu_${loc}_${pid}`, JSON.stringify(cu)); }
+function getCustomProducts(loc){ const r=localStorage.getItem(`cprods_${loc}`); return r?JSON.parse(r):[]; }
+function setCustomProducts(loc,arr){ localStorage.setItem(`cprods_${loc}`, JSON.stringify(arr)); }
+function genId(){ return 'cp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+const NQ_PREFIX = 'nq_';
+function nqLocsKey(code){ return NQ_PREFIX+'locs_'+code; }
+function nqRowsKey(code,loc,uIdx){ return NQ_PREFIX+loc+'_'+code+'_'+uIdx; }
+function getNqLocs(code){ const r=localStorage.getItem(nqLocsKey(code)); if(r) return JSON.parse(r); return ['На станции']; }
+function setNqLocs(code,arr){ localStorage.setItem(nqLocsKey(code), JSON.stringify(arr)); }
+function getNqRows(code,loc,uIdx){ const r=localStorage.getItem(nqRowsKey(code,loc,uIdx)); return r?JSON.parse(r):[null]; }
+function setNqRows(code,loc,uIdx,rows){ localStorage.setItem(nqRowsKey(code,loc,uIdx), JSON.stringify(rows)); }
+
+/* ═══════════════════════════════════════
+   ХЕЛПЕРЫ
+═══════════════════════════════════════ */
+function getOldLocs(pid){
+  return locations.filter(loc => (locationRules[loc] && locationRules[loc][pid]) || getCU(loc,pid).length>0);
+}
+function isEmbeddedOld(pid){ return !!EXCEL_TO_OLD[pid]; }
+function findProduct(pid){
+  const p = stdProducts.find(x=>x.id===pid);
+  if(p) return {kind:'old', id:p.id, name:p.name, baseUnit:p.baseUnit};
+  const n = NOMENCLATURE.find(x=>x.code===pid);
+  if(n) return {kind:'new', code:n.code, name:n.name, baseUnit:n.unit, units:n.units};
+  return null;
+}
+
+/* ═══════════════════════════════════════
+   CALC
+═══════════════════════════════════════ */
+function getOldLocTotal(loc,pid){
+  const cps = getCustomProducts(loc);
+  const cp = cps.find(p=>p.id===pid);
+  if(cp){
+    let t=0;
+    (cp.rows||[null]).forEach(v=>{ t += v==null||v==='' ? 0 : parseFloat(v); });
+    (cp.customUnits||[]).forEach(cu=>{ (cu.rows||[null]).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*cu.coefficient; }); });
+    return t;
+  }
+  let t=0;
+  const rules = locationRules[loc]?.[pid];
+  if(rules) rules.forEach((u,i)=>getRows(loc,pid,i).forEach(v=>{ t += u.toBase(v==null||v===''?0:parseFloat(v)); }));
+  getCU(loc,pid).forEach(cu=>cu.rows.forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*cu.coefficient; }));
+  return t;
+}
+function getNewLocTotal(loc,code){
+  const n = NOMENCLATURE.find(x=>x.code===code);
+  if(!n) return 0;
+  if(!getNqLocs(code).includes(loc)) return 0;
+  let t=0;
+  getNqRows(code,loc,0).forEach(v=>{ t += v==null||v===''?0:parseFloat(v); });
+  (n.units||[]).forEach((u,i)=>{
+    getNqRows(code,loc,i+1).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*u[1]; });
+  });
+  return t;
+}
+function getLocTotal(loc,pid){
+  const f = findProduct(pid);
+  if(!f) return 0;
+  return f.kind==='old' ? getOldLocTotal(loc,pid) : getNewLocTotal(loc,pid);
+}
+function fmt(baseUnit,val){
+  const rounded = Math.round((val+Number.EPSILON)*100)/100;
+  return baseUnit==='шт' ? Math.round(rounded) : rounded;
+}
+function getStep(label, isBase){
+  const l = (label||'').toLowerCase().trim();
+  if(isBase && (l === 'кг' || l === 'л')) return 0.1;
+  return 1;
+}
+function rnd(v,s){ return Math.round((v+Number.EPSILON)*100)/100; }
+
+/* ═══════════════════════════════════════
+   UNDO
+═══════════════════════════════════════ */
+const UNDO_KEY = '__undo_stack__';
+const MAX_UNDO = 10;
+function getAppDataKeys(){
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && (k.startsWith('inv_')||k.startsWith('cu_')||k.startsWith('cprods_')||k.startsWith('nq_'))) keys.push(k);
+  }
+  return keys;
+}
+function snapshotAppData(){ const snap={}; getAppDataKeys().forEach(k=>{ snap[k]=localStorage.getItem(k); }); return snap; }
+function pushUndoSnapshot(label){
+  try{
+    const stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]');
+    stack.push({label:label||'', data:snapshotAppData()});
+    while(stack.length>MAX_UNDO) stack.shift();
+    localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
+  }catch(e){ console.error('undo snapshot', e); }
+  updateUndoButton();
+}
+function undoLastAction(){
+  let stack;
+  try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
+  if(!stack.length){ toast('Нечего отменять'); return; }
+  const last=stack.pop();
+  localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
+  getAppDataKeys().forEach(k=>localStorage.removeItem(k));
+  Object.keys(last.data).forEach(k=>localStorage.setItem(k,last.data[k]));
+  renderLocStrip(); renderStats(); renderCategoryStrip(); renderProducts(); updateNavBadge();
+  document.getElementById('addProductFormWrap').innerHTML='';
+  if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+  updateUndoButton();
+  toast(last.label ? `↩️ Отменено: ${last.label}` : '↩️ Действие отменено');
+}
+function updateUndoButton(){
+  let stack;
+  try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
+  const btn=document.getElementById('undoBtn');
+  const badge=document.getElementById('undoBadge');
+  if(!btn) return;
+  btn.disabled = stack.length===0;
+  if(badge){
+    if(stack.length>0){ badge.style.display='flex'; badge.textContent=stack.length; }
+    else badge.style.display='none';
+  }
+}
+
+/* ═══════════════════════════════════════
+   TOAST / CONFIRM
+═══════════════════════════════════════ */
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+let _confirmCallback=null;
+function showConfirm(msg,onOk){
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmOverlay').classList.add('show');
+  _confirmCallback=onOk;
+}
+function hideConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  _confirmCallback=null;
+}
+
+/* ═══════════════════════════════════════
+   BADGE
+═══════════════════════════════════════ */
+function updateNavBadge(){
+  let filled = 0;
+  stdProducts.forEach(p=>{ if(locations.some(loc=>getOldLocTotal(loc,p.id)>0)) filled++; });
+  NOMENCLATURE.forEach(n=>{
+    if(OLD_TO_EXCEL[n.code]) return;
+    if(locations.some(loc=>getNewLocTotal(loc,n.code)>0)) filled++;
+  });
+  locations.forEach(loc=>{ getCustomProducts(loc).forEach(cp=>{ if(getOldLocTotal(loc,cp.id)>0) filled++; }); });
+  const badge=document.getElementById('navBadge');
+  badge.style.display = filled>0?'flex':'none';
+  badge.textContent = filled;
+}
+
+/* ═══════════════════════════════════════
+   LOC STRIP
+═══════════════════════════════════════ */
+function renderLocStrip(){
+  const c=document.getElementById('locStrip');
+  c.innerHTML='';
+  locations.forEach((loc,i)=>{
+    const chip=document.createElement('div');
+    chip.className='loc-chip'+(i===currentLocIdx?' active':'');
+    chip.id=`locchip_${i}`;
+    if(hasLocData(loc)) chip.classList.add('has-data');
+    chip.innerHTML=`<span class="loc-dot"></span>${loc}`;
+    chip.onclick=()=>switchLocation(i);
+    c.appendChild(chip);
+  });
+}
+function hasLocData(loc){
+  if(Object.keys(locationRules[loc]||{}).some(pid=>getOldLocTotal(loc,pid)>0)) return true;
+  if(getCustomProducts(loc).some(cp=>getOldLocTotal(loc,cp.id)>0)) return true;
+  if(NOMENCLATURE.some(n=>getNewLocTotal(loc,n.code)>0)) return true;
+  return false;
+}
+function updateLocChipData(locIdx){
+  const chip=document.getElementById(`locchip_${locIdx}`);
+  if(!chip) return;
+  chip.classList.toggle('has-data', hasLocData(locations[locIdx]));
+}
+
+/* ═══════════════════════════════════════
+   STATS
+═══════════════════════════════════════ */
+function renderStats(){
+  const newList = NOMENCLATURE.filter(n=>{
+    if(OLD_TO_EXCEL[n.code]) return false;
+    return getNqLocs(n.code).includes(currentLoc);
+  });
+  const oldPidsInLoc = new Set();
+  stdProducts.forEach(p=>{
+    if(!getOldLocs(p.id).includes(currentLoc)) return;
+    oldPidsInLoc.add(p.id);
+  });
+  const cpList = getCustomProducts(currentLoc);
+  const total = newList.length + oldPidsInLoc.size + cpList.length;
+  const filled =
+    newList.filter(n=>getNewLocTotal(currentLoc,n.code)>0).length +
+    [...oldPidsInLoc].filter(pid=>getOldLocTotal(currentLoc,pid)>0).length +
+    cpList.filter(cp=>getOldLocTotal(currentLoc,cp.id)>0).length;
+  const pct = total>0 ? Math.round(filled/total*100) : 0;
+  document.getElementById('stTotal').textContent = total;
+  document.getElementById('stFilled').textContent = filled;
+  document.getElementById('stPct').textContent = pct+'%';
+}
+
+/* ═══════════════════════════════════════
+   SWITCH LOCATION
+═══════════════════════════════════════ */
+function switchLocation(idx){
+  currentLocIdx=idx; currentLoc=locations[idx];
+  renderLocStrip();
+  const active=document.getElementById(`locchip_${idx}`);
+  if(active) active.scrollIntoView({block:'nearest',inline:'center'});
+  renderStats(); renderCategoryStrip(); renderProducts();
+  document.getElementById('addProductFormWrap').innerHTML='';
+}
+
+/* ═══════════════════════════════════════
+   SEARCH
+═══════════════════════════════════════ */
+function matchesSearch(p){
+  if(!invSearchQ) return true;
+  const q=invSearchQ.toLowerCase();
+  const name=(p.name||'').toLowerCase();
+  const cat=(p.category||'').toLowerCase();
+  const code=(p.code||p.id||'').toLowerCase();
+  return name.includes(q)||cat.includes(q)||code.includes(q);
+}
+
+/* ═══════════════════════════════════════
+   RENDER PRODUCTS
+═══════════════════════════════════════ */
+function renderProducts(){
+  const container=document.getElementById('productsList');
+  container.innerHTML='';
+
+  // 1. Строго по порядку NOMENCLATURE
+  NOMENCLATURE.forEach(n=>{
+    const oldId = OLD_TO_EXCEL[n.code];
+    const locs = oldId ? getOldLocs(oldId) : getNqLocs(n.code);
+    if(!locs.includes(currentLoc)) return;
+
+    if(currentCategory!=='all'){
+      const catKey = oldId ? productCategory(oldId) : n.group;
+      if(catKey!==currentCategory) return;
+    }
+    if(!matchesSearch({name:n.name, category:n.cat, code:n.code})) return;
+
+    if(oldId){
+      const product=stdProducts.find(p=>p.id===oldId);
+      if(!product) return;
+      container.appendChild(buildStdProductCard(product, locationRules[currentLoc]?.[oldId]||[], n));
+    } else {
+      container.appendChild(buildNewProductCard(n));
+    }
+  });
+
+  // 2. Хвост: старые, которых нет в Excel
+  const mappedOld = new Set(Object.values(OLD_TO_EXCEL));
+  stdProducts.forEach(p=>{
+    if(mappedOld.has(p.id)) return;
+    if(!getOldLocs(p.id).includes(currentLoc)) return;
+    const cat=productCategory(p.id);
+    if(currentCategory!=='all' && cat!==currentCategory) return;
+    if(!matchesSearch({name:p.name, category:cat, id:p.id})) return;
+    container.appendChild(buildStdProductCard(p, locationRules[currentLoc]?.[p.id]||[]));
+  });
+
+  // 3. Кастомные
+  if(currentCategory==='all'){
+    getCustomProducts(currentLoc).forEach(cp=>{
+      if(!matchesSearch({name:cp.name, category:'', id:cp.id})) return;
+      container.appendChild(buildCustomProductCard(cp));
+    });
+  }
+
+  if(!container.children.length){
+    container.innerHTML=`<div class="empty-state"><div class="ei">🔍</div><p>Ничего не найдено</p></div>`;
+  }
+}
+
+/* ═══════════════════════════════════════
+   CATEGORY STRIP
+═══════════════════════════════════════ */
+function renderCategoryStrip(){
+  const strip=document.getElementById('categoryStrip');
+  const groupsInLoc=new Set();
+  NOMENCLATURE.forEach(n=>{
+    const oldId=OLD_TO_EXCEL[n.code];
+    const locs=oldId?getOldLocs(oldId):getNqLocs(n.code);
+    if(locs.includes(currentLoc)) groupsInLoc.add(n.group);
+  });
+
+  const mappedOld=new Set(Object.values(OLD_TO_EXCEL));
+  const tailCats=new Set();
+  stdProducts.forEach(p=>{
+    if(mappedOld.has(p.id)) return;
+    if(!getOldLocs(p.id).includes(currentLoc)) return;
+    tailCats.add(productCategory(p.id));
+  });
+
+  const chips=[{key:'all',label:'Все'}];
+  Object.keys(NOMENCLATURE_GROUPS).forEach(g=>{
+    if(groupsInLoc.has(g)) chips.push({key:g, label:NOMENCLATURE_GROUPS[g]});
+  });
+  const oldLabels={chicken:'Курица (старые)',potato:'Картофель (старые)',mixes:'Смеси (старые)',pantry:'Бакалея (старые)',beer:'Пиво / тара (старые)',containers:'Тара (старые)'};
+  Object.keys(PRODUCT_CATEGORIES).forEach(k=>{
+    if(tailCats.has(k)) chips.push({key:k, label:oldLabels[k]||PRODUCT_CATEGORIES[k].label});
+  });
+
+  if(currentCategory!=='all' && !chips.some(c=>c.key===currentCategory)) currentCategory='all';
+  strip.innerHTML='';
+  chips.forEach(c=>{
+    const chip=document.createElement('button');
+    chip.type='button';
+    chip.className='category-chip'+(c.key===currentCategory?' active':'');
+    chip.textContent=c.label;
+    chip.onclick=()=>{ currentCategory=c.key; renderCategoryStrip(); renderProducts(); };
+    strip.appendChild(chip);
+  });
+}
+
+/* ═══════════════════════════════════════
+   СТАРАЯ КАРТОЧКА
+═══════════════════════════════════════ */
+function buildStdProductCard(product, unitRules, excelMeta){
+  const pid=product.id;
+  const totalVal=fmt(product.baseUnit, getOldLocTotal(currentLoc,pid));
+  const hasData=totalVal>0;
+  const card=document.createElement('div');
+  card.className='product-card '+(hasData?'has-data':'');
+  card.id=`pcard_${pid}`;
+
+  const displayName = excelMeta ? excelMeta.name : product.name;
+  const displaySub = excelMeta ? `${excelMeta.cat} · ${excelMeta.code}` : 'Старая номенклатура';
+
+  const header=document.createElement('div');
+  header.className='product-header';
+  header.innerHTML=`
+    <div class="product-indicator"></div>
+    <div class="product-main">
+      <div class="product-name">${displayName}</div>
+      <div class="product-sub">${displaySub}</div>
+    </div>
+    <div class="product-meta">
+      <div class="product-total ${hasData?'':'zero'}" id="ptotal_${pid}">${totalVal}</div>
+      <div class="product-unit-tag">${product.baseUnit}</div>
+    </div>
+    <div class="product-chevron">⌄</div>`;
+  header.onclick=()=>card.classList.toggle('open');
+  card.appendChild(header);
+
+  const body=document.createElement('div');
+  body.className='product-body';
+  unitRules.forEach((unit,uIdx)=>{ body.appendChild(buildUnitBlock(currentLoc,pid,uIdx,unit.label,false,null,product.baseUnit)); });
+  getCU(currentLoc,pid).forEach((cu,cuIdx)=>{ body.appendChild(buildUnitBlock(currentLoc,pid,cuIdx,cu.label,true,cu.coefficient,product.baseUnit)); });
+
+  const footer=document.createElement('div');
+  footer.className='product-footer';
+  const addBtn=document.createElement('button');
+  addBtn.className='add-custom-btn';
+  addBtn.textContent='➕ Своя единица';
+  addBtn.onclick=()=>toggleCustomUnitForm(body,currentLoc,pid,false);
+  const clrBtn=document.createElement('button');
+  clrBtn.className='clear-product-btn';
+  clrBtn.textContent='🗑 Очистить';
+  clrBtn.onclick=()=>{
+    showConfirm(`Очистить "${displayName}"?`,()=>{
+      pushUndoSnapshot(`Очистка «${displayName}»`);
+      unitRules.forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
+      setCU(currentLoc,pid,[]);
+      refreshStdCard(pid,product,unitRules);
+    });
+  };
+  footer.appendChild(addBtn); footer.appendChild(clrBtn);
+  body.appendChild(footer); card.appendChild(body);
+  return card;
+}
+
+/* ═══════════════════════════════════════
+   НОВАЯ КАРТОЧКА
+═══════════════════════════════════════ */
+function buildNewProductCard(n){
+  const code_=n.code;
+  const totalVal=fmt(n.unit, getNewLocTotal(currentLoc, code_));
+  const hasData=totalVal>0;
+  const card=document.createElement('div');
+  card.className='product-card '+(hasData?'has-data':'');
+  card.id=`pcard_${code_}`;
+
+  const header=document.createElement('div');
+  header.className='product-header';
+  header.innerHTML=`
+    <div class="product-indicator"></div>
+    <div class="product-main">
+      <div class="product-name">${n.name}</div>
+      <div class="product-sub">${n.cat} · ${n.code}</div>
+    </div>
+    <div class="product-meta">
+      <div class="product-total ${hasData?'':'zero'}" id="ptotal_${code_}">${totalVal}</div>
+      <div class="product-unit-tag">${n.unit}</div>
+    </div>
+    <div class="product-chevron">⌄</div>`;
+  header.onclick=()=>card.classList.toggle('open');
+  card.appendChild(header);
+
+  const body=document.createElement('div');
+  body.className='product-body';
+  body.appendChild(buildNewUnitBlock(n, 0, n.unit));
+  (n.units||[]).forEach((u,i)=>{ body.appendChild(buildNewUnitBlock(n, i+1, u[0])); });
+
+  const locsBlock=document.createElement('div');
+  locsBlock.className='custom-form';
+  locsBlock.style.background='var(--border-light)';
+  locsBlock.style.borderColor='var(--border)';
+  locsBlock.innerHTML=`<div class="custom-form-title" style="color:var(--text-secondary);font-size:12px;">📍 Помещения для этой позиции</div>`;
+  const locsWrap=document.createElement('div');
+  locsWrap.className='loc-multi';
+  const currentLocs=getNqLocs(code_);
+  locations.forEach(loc=>{
+    const lbl=document.createElement('label');
+    const cb=document.createElement('input');
+    cb.type='checkbox';
+    cb.checked=currentLocs.includes(loc);
+    cb.onchange=()=>{
+      let arr=getNqLocs(code_);
+      if(cb.checked){ if(!arr.includes(loc)) arr.push(loc); }
+      else { arr=arr.filter(x=>x!==loc); }
+      if(arr.length===0) arr=['На станции'];
+      setNqLocs(code_, arr);
+      renderLocStrip(); renderStats(); updateNavBadge();
+      if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+    };
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(' '+loc));
+    locsWrap.appendChild(lbl);
+  });
+  locsBlock.appendChild(locsWrap);
+  body.appendChild(locsBlock);
+
+  const footer=document.createElement('div');
+  footer.className='product-footer';
+  const clrBtn=document.createElement('button');
+  clrBtn.className='clear-product-btn';
+  clrBtn.textContent='🗑 Очистить';
+  clrBtn.onclick=()=>{
+    showConfirm(`Очистить "${n.name}"?`,()=>{
+      pushUndoSnapshot(`Очистка «${n.name}»`);
+      setNqRows(code_, currentLoc, 0, [null]);
+      (n.units||[]).forEach((_,i)=>setNqRows(code_, currentLoc, i+1, [null]));
+      refreshNewCard(code_);
+    });
+  };
+  footer.appendChild(clrBtn);
+  body.appendChild(footer);
+
+  card.appendChild(body);
+  return card;
+}
+
+function buildNewUnitBlock(n, uIdx, label){
+  const code_=n.code;
+  const s=getStep(label, uIdx === 0);
+  const block=document.createElement('div');
+  block.className='unit-block';
+  const bHeader=document.createElement('div');
+  bHeader.className='unit-block-header';
+  const nameEl=document.createElement('div');
+  nameEl.className='unit-name';
+  nameEl.textContent=label;
+  const subEl=document.createElement('div');
+  subEl.className='unit-subtotal';
+  subEl.id=`nqust_${code_}_${uIdx}`;
+  bHeader.appendChild(nameEl); bHeader.appendChild(subEl);
+  block.appendChild(bHeader);
+
+  const rowsWrap=document.createElement('div');
+  rowsWrap.className='unit-rows';
+  block.appendChild(rowsWrap);
+
+  function coef(){
+    if(uIdx===0) return 1;
+    const u=n.units[uIdx-1];
+    return u ? u[1] : 1;
+  }
+
+  function refreshRows(){
+    const data=getNqRows(code_, currentLoc, uIdx);
+    rowsWrap.innerHTML='';
+    let sub=0;
+    data.forEach((val,i)=>{
+      const v=val==null||val===''?0:parseFloat(val);
+      sub += v*coef();
+      const row=makeRowDOM(val, s,
+        (nv)=>{
+          let r=getNqRows(code_, currentLoc, uIdx);
+          r[i]=nv;
+          setNqRows(code_, currentLoc, uIdx, r);
+          updateNewSubtotal(code_, uIdx, n);
+          updateNewCardTotal(code_, n.unit);
+          updateNavBadge();
+          if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+        },
+        ()=>{
+          let r=getNqRows(code_, currentLoc, uIdx);
+          r.push(null);
+          setNqRows(code_, currentLoc, uIdx, r);
+          refreshRows();
+        },
+        ()=>{
+          let r=getNqRows(code_, currentLoc, uIdx);
+          if(r.length===1) r=[null]; else r.splice(i,1);
+          setNqRows(code_, currentLoc, uIdx, r);
+          refreshRows();
+          updateNewSubtotal(code_, uIdx, n);
+          updateNewCardTotal(code_, n.unit);
+          updateNavBadge();
+        },
+        i
+      );
+      rowsWrap.appendChild(row);
+    });
+    const el=document.getElementById(`nqust_${code_}_${uIdx}`);
+    if(el) el.textContent = sub>0 ? `= ${fmt(n.unit, sub)}` : '';
+  }
+  refreshRows();
+  return block;
+}
+
+/* ═══════════════════════════════════════
+   КАСТОМНЫЕ ПРОДУКТЫ
+═══════════════════════════════════════ */
+function buildCustomProductCard(cp){
+  const pid=cp.id;
+  const totalVal=fmt(cp.baseUnit, getOldLocTotal(currentLoc,pid));
+  const hasData=totalVal>0;
+  const card=document.createElement('div');
+  card.className='product-card custom-product'+(hasData?' has-data':'');
+  card.id=`pcard_${pid}`;
+  const header=document.createElement('div');
+  header.className='product-header';
+  header.innerHTML=`
+    <div class="product-indicator"></div>
+    <div class="product-main">
+      <div class="product-name">${cp.name}</div>
+      <div class="product-sub">Свой продукт</div>
+    </div>
+    <div class="product-meta">
+      <div class="product-total ${hasData?'':'zero'}" id="ptotal_${pid}">${totalVal}</div>
+      <div class="product-unit-tag">${cp.baseUnit}</div>
+      <div class="custom-tag">свой</div>
+    </div>
+    <div class="product-chevron">⌄</div>`;
+  header.onclick=()=>card.classList.toggle('open');
+  card.appendChild(header);
+  const body=document.createElement('div');
+  body.className='product-body';
+  body.appendChild(buildCustomProductUnitBlock(cp));
+  (cp.customUnits||[]).forEach((_,cuIdx)=>{ body.appendChild(buildCPCustomUnitBlock(cp,cuIdx)); });
+  const footer=document.createElement('div');
+  footer.className='product-footer';
+  const addUnitBtn=document.createElement('button');
+  addUnitBtn.className='add-custom-btn';
+  addUnitBtn.textContent='➕ Своя единица';
+  addUnitBtn.onclick=()=>toggleCustomUnitForm(body,currentLoc,pid,true);
+  const clrBtn=document.createElement('button');
+  clrBtn.className='clear-product-btn';
+  clrBtn.textContent='🗑 Очистить';
+  clrBtn.onclick=()=>{
+    showConfirm(`Очистить "${cp.name}"?`,()=>{
+      pushUndoSnapshot(`Очистка «${cp.name}»`);
+      let cps=getCustomProducts(currentLoc);
+      const idx=cps.findIndex(p=>p.id===pid);
+      if(idx!==-1){ cps[idx].rows=[null]; cps[idx].customUnits=[]; setCustomProducts(currentLoc,cps); }
+      refreshCustomCard(pid);
+    });
+  };
+  const delBtn=document.createElement('button');
+  delBtn.className='delete-product-btn';
+  delBtn.textContent='✖ Удалить продукт';
+  delBtn.onclick=()=>{
+    showConfirm(`Удалить продукт "${cp.name}"?`,()=>{
+      pushUndoSnapshot(`Удаление «${cp.name}»`);
+      let cps=getCustomProducts(currentLoc);
+      setCustomProducts(currentLoc, cps.filter(p=>p.id!==pid));
+      renderProducts(); renderStats(); updateLocChipData(currentLocIdx); updateNavBadge();
+      toast(`🗑 "${cp.name}" удалён`);
+    });
+  };
+  footer.appendChild(addUnitBtn); footer.appendChild(clrBtn); footer.appendChild(delBtn);
+  body.appendChild(footer); card.appendChild(body);
+  return card;
+}
+
+function buildCustomProductUnitBlock(cp){
+  const pid=cp.id; const s=getStep(cp.baseUnit, true);
+  const block=document.createElement('div');
+  block.className='unit-block';
+  const bHeader=document.createElement('div');
+  bHeader.className='unit-block-header';
+  bHeader.innerHTML=`<div class="unit-name">${cp.baseUnit}</div><div class="unit-subtotal" id="cpust_${pid}_base"></div>`;
+  block.appendChild(bHeader);
+  const rowsWrap=document.createElement('div');
+  rowsWrap.className='unit-rows';
+  block.appendChild(rowsWrap);
+  function refreshRows(){
+    const cps=getCustomProducts(currentLoc);
+    const cur=cps.find(p=>p.id===pid);
+    if(!cur) return;
+    const data=cur.rows||[null];
+    rowsWrap.innerHTML='';
+    let sub=0;
+    data.forEach((val,i)=>{
+      const v=val==null||val===''?0:parseFloat(val); sub+=v;
+      const row=makeRowDOM(val,s,
+        (nv)=>{
+          let c=getCustomProducts(currentLoc);
+          const ci=c.findIndex(p=>p.id===pid);
+          if(ci!==-1){ c[ci].rows[i]=nv; setCustomProducts(currentLoc,c); }
+          updateCPSubtotal(pid,'base',cp.baseUnit); updateCPCardTotal(pid,cp.baseUnit); updateNavBadge();
+          if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+        },
+        ()=>{
+          let c=getCustomProducts(currentLoc);
+          const ci=c.findIndex(p=>p.id===pid);
+          if(ci!==-1){ c[ci].rows.push(null); setCustomProducts(currentLoc,c); }
+          refreshRows();
+        },
+        ()=>{
+          let c=getCustomProducts(currentLoc);
+          const ci=c.findIndex(p=>p.id===pid);
+          if(ci!==-1){ if(c[ci].rows.length===1)c[ci].rows=[null]; else c[ci].rows.splice(i,1); setCustomProducts(currentLoc,c); }
+          refreshRows(); updateCPSubtotal(pid,'base',cp.baseUnit); updateCPCardTotal(pid,cp.baseUnit); updateNavBadge();
+        },
+        i);
+      rowsWrap.appendChild(row);
+    });
+    const el=document.getElementById(`cpust_${pid}_base`);
+    if(el) el.textContent = sub>0 ? `= ${fmt(cp.baseUnit, sub)}` : '';
+  }
+  refreshRows();
+  return block;
+}
+
+function buildCPCustomUnitBlock(cp,cuIdx){
+  const pid=cp.id;
+  const block=document.createElement('div');
+  block.className='unit-block';
+  const bHeader=document.createElement('div');
+  bHeader.className='unit-block-header';
+  const nameEl=document.createElement('div');
+  nameEl.className='unit-name';
+  nameEl.textContent=`${cp.customUnits[cuIdx].label} ×${cp.customUnits[cuIdx].coefficient}`;
+  const delBtn=document.createElement('button');
+  delBtn.style.cssText='background:var(--danger-subtle);border:none;color:var(--danger);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
+  delBtn.textContent='✖';
+  delBtn.onclick=()=>{
+    let cps=getCustomProducts(currentLoc);
+    const ci=cps.findIndex(p=>p.id===pid);
+    if(ci!==-1){ cps[ci].customUnits.splice(cuIdx,1); setCustomProducts(currentLoc,cps); }
+    refreshCustomCard(pid);
+  };
+  bHeader.appendChild(nameEl); bHeader.appendChild(delBtn); block.appendChild(bHeader);
+  const rowsWrap=document.createElement('div');
+  rowsWrap.className='unit-rows';
+  block.appendChild(rowsWrap);
+  function refreshRows(){
+    const cps=getCustomProducts(currentLoc);
+    const cur=cps.find(p=>p.id===pid);
+    if(!cur||!cur.customUnits[cuIdx]) return;
+    const coef=cur.customUnits[cuIdx].coefficient;
+    const data=cur.customUnits[cuIdx].rows||[null];
+    rowsWrap.innerHTML='';
+    data.forEach((val,i)=>{
+      const row=makeRowDOM(val,1,
+        (nv)=>{
+          let c=getCustomProducts(currentLoc);
+          const ci=c.findIndex(p=>p.id===pid);
+          if(ci!==-1){ c[ci].customUnits[cuIdx].rows[i]=nv; setCustomProducts(currentLoc,c); }
+          updateCPCardTotal(pid,cur.baseUnit); updateNavBadge();
+          if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+        },
+        ()=>{
+          let c=getCustomProducts(currentLoc);
+          const ci=c.findIndex(p=>p.id===pid);
+          if(ci!==-1){ c[ci].customUnits[cuIdx].rows.push(null); setCustomProducts(currentLoc,c); }
+          refreshRows();
+        },
+        ()=>{
+          let c=getCustomProducts(currentLoc);
+          const ci=c.findIndex(p=>p.id===pid);
+          if(ci!==-1){
+            if(c[ci].customUnits[cuIdx].rows.length===1)c[ci].customUnits[cuIdx].rows=[null];
+            else c[ci].customUnits[cuIdx].rows.splice(i,1);
+            setCustomProducts(currentLoc,c);
+          }
+          refreshRows(); updateCPCardTotal(pid,cur.baseUnit); updateNavBadge();
+        },
+        i);
+      rowsWrap.appendChild(row);
+    });
+  }
+  refreshRows();
+  return block;
+}
+
+/* ═══════════════════════════════════════
+   СТАРЫЙ UNIT BLOCK
+═══════════════════════════════════════ */
+function buildUnitBlock(loc,pid,idx,label,isCustom,coef,baseUnit){
+  const s=getStep(label, !isCustom && idx === 0);
+  const block=document.createElement('div');
+  block.className='unit-block';
+  const bHeader=document.createElement('div');
+  bHeader.className='unit-block-header';
+  const nameEl=document.createElement('div');
+  nameEl.className='unit-name';
+  nameEl.textContent = isCustom ? `${label} ×${coef}` : label;
+  const subEl=document.createElement('div');
+  subEl.className='unit-subtotal';
+  subEl.id=`ust_${loc}_${pid}_${idx}_${isCustom?'c':'s'}`;
+  if(isCustom){
+    const delBtn=document.createElement('button');
+    delBtn.style.cssText='background:var(--danger-subtle);border:none;color:var(--danger);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
+    delBtn.textContent='✖';
+    delBtn.onclick=()=>{
+      let cu=getCU(loc,pid); cu.splice(idx,1); setCU(loc,pid,cu);
+      refreshStdCard(pid, stdProducts.find(p=>p.id===pid), locationRules[loc]?.[pid]||[]);
+    };
+    bHeader.appendChild(nameEl); bHeader.appendChild(delBtn);
+  } else { bHeader.appendChild(nameEl); bHeader.appendChild(subEl); }
+  block.appendChild(bHeader);
+  const rowsWrap=document.createElement('div');
+  rowsWrap.className='unit-rows';
+  block.appendChild(rowsWrap);
+  function refreshRows(){
+    const data = isCustom ? (getCU(loc,pid)[idx]?.rows||[null]) : getRows(loc,pid,idx);
+    rowsWrap.innerHTML='';
+    let sub=0;
+    data.forEach((val,i)=>{
+      const v=val==null||val===''?0:parseFloat(val);
+      sub += isCustom ? v*coef : (locationRules[loc]?.[pid]?.[idx]?.toBase(v)||0);
+      const row=makeRowDOM(val,s,
+        (nv)=>{
+          if(isCustom){ let cu=getCU(loc,pid); if(cu[idx]){ cu[idx].rows[i]=nv; setCU(loc,pid,cu); } }
+          else { let r=getRows(loc,pid,idx); r[i]=nv; setRows(loc,pid,idx,r); }
+          updateSubtotal(loc,pid,idx,isCustom,coef);
+          updateCardTotal(pid,baseUnit); updateNavBadge();
+          if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+        },
+        ()=>{
+          if(isCustom){ let cu=getCU(loc,pid); if(cu[idx]){ cu[idx].rows.push(null); setCU(loc,pid,cu); } }
+          else { let r=getRows(loc,pid,idx); r.push(null); setRows(loc,pid,idx,r); }
+          refreshRows();
+        },
+        ()=>{
+          if(isCustom){ let cu=getCU(loc,pid); if(cu[idx]){ if(cu[idx].rows.length===1)cu[idx].rows=[null]; else cu[idx].rows.splice(i,1); setCU(loc,pid,cu); } }
+          else { let r=getRows(loc,pid,idx); if(r.length===1)r=[null]; else r.splice(i,1); setRows(loc,pid,idx,r); }
+          refreshRows(); updateSubtotal(loc,pid,idx,isCustom,coef);
+          updateCardTotal(pid,baseUnit); updateNavBadge();
+        },
+        i);
+      rowsWrap.appendChild(row);
+    });
+    const stEl=document.getElementById(`ust_${loc}_${pid}_${idx}_${isCustom?'c':'s'}`);
+    if(stEl) stEl.textContent = sub>0 ? `= ${fmt(baseUnit, sub)}` : '';
+  }
+  refreshRows();
+  return block;
+}
+
+/* ═══════════════════════════════════════
+   ФАБРИКА СТРОКИ
+═══════════════════════════════════════ */
+function makeRowDOM(val,s,onSave,onAdd,onRemove,rowIdx){
+  const row=document.createElement('div');
+  row.className='row-item';
+  const num=document.createElement('span');
+  num.className='row-num';
+  num.textContent=rowIdx+1;
+  const vc=document.createElement('div');
+  vc.className='vc';
+  const dec=document.createElement('button');
+  dec.className='vc-btn'; dec.textContent='−';
+  const inp=document.createElement('input');
+  inp.className='vc-input'; inp.type='number'; inp.inputMode='decimal';
+  inp.step=s; inp.min=0; inp.placeholder='0';
+  inp.value = val==null||val==='' ? '' : val;
+  const inc=document.createElement('button');
+  inc.className='vc-btn'; inc.textContent='+';
+  vc.appendChild(dec); vc.appendChild(inp); vc.appendChild(inc);
+  const acts=document.createElement('div');
+  acts.className='row-actions';
+  const addRow=document.createElement('button');
+  addRow.className='row-action-btn'; addRow.textContent='+';
+  const delRow=document.createElement('button');
+  delRow.className='row-action-btn del'; delRow.textContent='−';
+  acts.appendChild(addRow); acts.appendChild(delRow);
+  row.appendChild(num); row.appendChild(vc); row.appendChild(acts);
+  const save=()=>{
+    let nv = inp.value==='' ? null : rnd(Math.max(0, parseFloat(inp.value)||0), s);
+    if(nv!==null) inp.value=nv;
+    onSave(nv);
+  };
+  inp.addEventListener('change',save);
+  inp.addEventListener('blur',save);
+  dec.addEventListener('click',()=>{ let v=inp.value===''?0:parseFloat(inp.value)||0; inp.value=rnd(Math.max(0,v-s),s); save(); });
+  inc.addEventListener('click',()=>{ let v=inp.value===''?0:parseFloat(inp.value)||0; inp.value=rnd(v+s,s); save(); });
+  addRow.addEventListener('click',onAdd);
+  delRow.addEventListener('click',onRemove);
+  return row;
+}
+
+/* ═══════════════════════════════════════
+   ОБНОВЛЕНИЯ
+═══════════════════════════════════════ */
+function updateSubtotal(loc,pid,idx,isCustom,coef){
+  const data = isCustom ? (getCU(loc,pid)[idx]?.rows||[null]) : getRows(loc,pid,idx);
+  let t=0;
+  data.forEach(v=>{ const n=v==null||v===''?0:parseFloat(v); t += isCustom ? n*coef : (locationRules[loc]?.[pid]?.[idx]?.toBase(n)||0); });
+  const el=document.getElementById(`ust_${loc}_${pid}_${idx}_${isCustom?'c':'s'}`);
+  const product=stdProducts.find(p=>p.id===pid);
+  if(el) el.textContent = t>0 ? `= ${fmt(product?.baseUnit||'шт', t)}` : '';
+}
+function updateCardTotal(pid,baseUnit){
+  const el=document.getElementById(`ptotal_${pid}`);
+  const card=document.getElementById(`pcard_${pid}`);
+  if(!el||!card) return;
+  const val=fmt(baseUnit, getOldLocTotal(currentLoc,pid));
+  el.textContent=val;
+  el.className='product-total'+(val>0?'':' zero');
+  card.classList.toggle('has-data', val>0);
+  updateLocChipData(currentLocIdx); renderStats();
+}
+function updateCPSubtotal(pid,key,baseUnit){
+  const cps=getCustomProducts(currentLoc);
+  const cp=cps.find(p=>p.id===pid);
+  if(!cp) return;
+  const data=cp.rows||[null];
+  let t=0;
+  data.forEach(v=>{ t += v==null||v===''?0:parseFloat(v); });
+  const el=document.getElementById(`cpust_${pid}_${key}`);
+  if(el) el.textContent = t>0 ? `= ${fmt(baseUnit, t)}` : '';
+}
+function updateCPCardTotal(pid,baseUnit){
+  const el=document.getElementById(`ptotal_${pid}`);
+  const card=document.getElementById(`pcard_${pid}`);
+  if(!el||!card) return;
+  const val=fmt(baseUnit, getOldLocTotal(currentLoc,pid));
+  el.textContent=val;
+  el.className='product-total'+(val>0?'':' zero');
+  card.classList.toggle('has-data', val>0);
+  updateLocChipData(currentLocIdx); renderStats();
+}
+function updateNewSubtotal(code_,uIdx,n){
+  let t=0;
+  if(uIdx===0){
+    getNqRows(code_, currentLoc, 0).forEach(v=>{ t += v==null||v===''?0:parseFloat(v); });
+  } else {
+    const coef = n.units[uIdx-1]?.[1]||1;
+    getNqRows(code_, currentLoc, uIdx).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*coef; });
+  }
+  const el=document.getElementById(`nqust_${code_}_${uIdx}`);
+  if(el) el.textContent = t>0 ? `= ${fmt(n.unit, t)}` : '';
+}
+function updateNewCardTotal(code_,baseUnit){
+  const el=document.getElementById(`ptotal_${code_}`);
+  const card=document.getElementById(`pcard_${code_}`);
+  if(!el||!card) return;
+  const val=fmt(baseUnit, getNewLocTotal(currentLoc, code_));
+  el.textContent=val;
+  el.className='product-total'+(val>0?'':' zero');
+  card.classList.toggle('has-data', val>0);
+  updateLocChipData(currentLocIdx); renderStats();
+}
+function refreshStdCard(pid,product,unitRules){
+  const card=document.getElementById(`pcard_${pid}`);
+  if(!card) return;
+  const wasOpen=card.classList.contains('open');
+  const meta = NOMENCLATURE.find(n=>OLD_TO_EXCEL[n.code]===pid) || null;
+  const newCard=buildStdProductCard(product,unitRules,meta);
+  if(wasOpen) newCard.classList.add('open');
+  card.replaceWith(newCard);
+  updateLocChipData(currentLocIdx); renderStats(); updateNavBadge();
+  if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+}
+function refreshNewCard(code_){
+  const card=document.getElementById(`pcard_${code_}`);
+  if(!card) return;
+  const wasOpen=card.classList.contains('open');
+  const n=NOMENCLATURE.find(x=>x.code===code_);
+  if(!n) return;
+  const newCard=buildNewProductCard(n);
+  if(wasOpen) newCard.classList.add('open');
+  card.replaceWith(newCard);
+  updateLocChipData(currentLocIdx); renderStats(); updateNavBadge();
+  if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+}
+function refreshCustomCard(pid){
+  const card=document.getElementById(`pcard_${pid}`);
+  if(!card) return;
+  const cps=getCustomProducts(currentLoc);
+  const cp=cps.find(p=>p.id===pid);
+  if(!cp) return;
+  const wasOpen=card.classList.contains('open');
+  const newCard=buildCustomProductCard(cp);
+  if(wasOpen) newCard.classList.add('open');
+  card.replaceWith(newCard);
+  updateLocChipData(currentLocIdx); renderStats(); updateNavBadge();
+  if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+}
+
+/* ═══════════════════════════════════════
+   CUSTOM UNIT FORM
+═══════════════════════════════════════ */
+function toggleCustomUnitForm(body,loc,pid,isForCustomProduct){
+  const existing=body.querySelector('.custom-form');
+  if(existing){ existing.remove(); return; }
+  const form=document.createElement('div');
+  form.className='custom-form';
+  form.innerHTML=`
+    <div class="custom-form-title">➕ Новая единица</div>
+    <input type="text" placeholder="Название (напр. коробка 10 кг)" id="cfLabel">
+    <input type="number" step="any" inputmode="decimal" placeholder="Сколько базовых единиц" id="cfCoef">
+    <div class="custom-form-btns">
+      <button class="cf-save" id="cfSave">💾 Сохранить</button>
+      <button class="cf-cancel" id="cfCancel">Отмена</button>
+    </div>`;
+  const footer=body.querySelector('.product-footer');
+  body.insertBefore(form,footer);
+  form.querySelector('#cfSave').onclick=()=>{
+    const label=form.querySelector('#cfLabel').value.trim();
+    const coef=parseFloat(form.querySelector('#cfCoef').value);
+    if(!label || isNaN(coef) || coef<=0){ toast('⚠️ Введите корректные данные'); return; }
+    if(isForCustomProduct){
+      let cps=getCustomProducts(loc);
+      const ci=cps.findIndex(p=>p.id===pid);
+      if(ci!==-1){ if(!cps[ci].customUnits)cps[ci].customUnits=[]; cps[ci].customUnits.push({label,coefficient:coef,rows:[null]}); setCustomProducts(loc,cps); refreshCustomCard(pid); }
+    } else {
+      let cu=getCU(loc,pid); cu.push({label,coefficient:coef,rows:[null]}); setCU(loc,pid,cu);
+      const product=stdProducts.find(p=>p.id===pid);
+      refreshStdCard(pid,product,locationRules[loc]?.[pid]||[]);
+    }
+  };
+  form.querySelector('#cfCancel').onclick=()=>form.remove();
+  form.querySelector('#cfLabel').focus();
+}
+
+/* ═══════════════════════════════════════
+   ADD PRODUCT FORM
+═══════════════════════════════════════ */
+function showAddProductForm(){
+  const wrap=document.getElementById('addProductFormWrap');
+  if(wrap.querySelector('.add-product-form')){ wrap.innerHTML=''; return; }
+  const form=document.createElement('div');
+  form.className='add-product-form';
+  form.innerHTML=`
+    <div class="add-product-form-title">🆕 Новый продукт для «${currentLoc}»</div>
+    <input type="text" placeholder="Название продукта" id="apfName">
+    <select id="apfUnit">
+      <option value="шт">шт — штуки</option>
+      <option value="кг">кг — килограммы</option>
+      <option value="л">л — литры</option>
+    </select>
+    <select id="apfCategory" aria-label="Категория продукта">
+      <option value="meat">Мясо / птица / полуфабрикаты</option><option value="veg">Овощи / картофель</option><option value="sauce">Соусы / специи</option><option value="drinks">Напитки / сиропы</option><option value="bakery">Выпечка / десерты</option><option value="pantry">Бакалея / сырьё</option><option value="pack">Упаковка / расходники</option><option value="promo">Промо</option>
+    </select>
+    <div class="add-product-form-btns">
+      <button class="apf-save" id="apfSave">✅ Добавить</button>
+      <button class="apf-cancel" id="apfCancel">Отмена</button>
+    </div>`;
+  wrap.innerHTML=''; wrap.appendChild(form);
+  form.querySelector('#apfSave').onclick=()=>{
+    const name=form.querySelector('#apfName').value.trim();
+    const baseUnit=form.querySelector('#apfUnit').value;
+    const group=form.querySelector('#apfCategory').value;
+    if(!name){ toast('⚠️ Введите название продукта'); return; }
+    pushUndoSnapshot(`Добавление «${name}»`);
+    const newProduct={id:genId(),name,baseUnit,group,rows:[null],customUnits:[]};
+    let cps=getCustomProducts(currentLoc);
+    cps.push(newProduct);
+    setCustomProducts(currentLoc,cps);
+    wrap.innerHTML='';
+    renderProducts(); renderStats(); updateLocChipData(currentLocIdx); updateNavBadge();
+    toast(`✅ Продукт «${name}» добавлен`);
+    setTimeout(()=>{
+      const newCard=document.getElementById(`pcard_${newProduct.id}`);
+      if(newCard){ newCard.classList.add('open'); newCard.scrollIntoView({behavior:'smooth',block:'center'}); }
+    },100);
+  };
+  form.querySelector('#apfCancel').onclick=()=>{ wrap.innerHTML=''; };
+  form.querySelector('#apfName').focus();
+}
+
+/* ═══════════════════════════════════════
+   SUMMARY
+═══════════════════════════════════════ */
+function renderSummary(){
+  const allRows=[];
+  const mappedOldIds = new Set(Object.values(OLD_TO_EXCEL));
+
+  // 1. Строго по NOMENCLATURE
+  NOMENCLATURE.forEach(n=>{
+    const oldId = OLD_TO_EXCEL[n.code];
+    if (oldId) {
+      const p = stdProducts.find(x=>x.id===oldId);
+      if (!p) return;
+      const total = locations.reduce((s,loc)=>s+getOldLocTotal(loc,oldId),0);
+      const display = fmt(p.baseUnit, total);
+      const detail = locations.filter(loc=>getOldLocs(oldId).includes(loc))
+        .map(loc=>{ 
+          const v = fmt(p.baseUnit, getOldLocTotal(loc,oldId)); 
+          return v > 0 ? `${loc}: ${v}` : null; 
+        })
+        .filter(Boolean).join('\n');
+      allRows.push({pid: oldId, name: n.name, unit: p.baseUnit, total: display, detail, isCustom: false, isOld: true, group:n.group});
+    } else {
+      const total = locations.reduce((s,loc)=>s+getNewLocTotal(loc,n.code),0);
+      const display = fmt(n.unit, total);
+      const detail = locations.filter(loc=>getNqLocs(n.code).includes(loc) && getNewLocTotal(loc,n.code)>0)
+        .map(loc=>`${loc}: ${fmt(n.unit,getNewLocTotal(loc,n.code))}`)
+        .join('\n');
+      allRows.push({pid: n.code, name: n.name, unit: n.unit, total: display, detail, isCustom: false, isOld: false, group:n.group});
+    }
+  });
+
+  // 2. Хвост (пиво, кеги)
+  stdProducts.forEach(p=>{
+    if (mappedOldIds.has(p.id)) return;
+    const total = locations.reduce((s,loc)=>s+getOldLocTotal(loc,p.id),0);
+    const display = fmt(p.baseUnit, total);
+    const detail = locations.filter(loc=>getOldLocs(p.id).includes(loc))
+      .map(loc=>{ 
+        const v = fmt(p.baseUnit, getOldLocTotal(loc,p.id)); 
+        return v > 0 ? `${loc}: ${v}` : null; 
+      })
+      .filter(Boolean).join('\n');
+    allRows.push({pid: p.id, name: p.name, unit: p.baseUnit, total: display, detail, isCustom: false, isOld: true, group:({chicken:'meat',potato:'veg',mixes:'sauce',pantry:'pantry',beer:'drinks',containers:'pack'})[productCategory(p.id)]||'pantry'});
+  });
+
+  // 3. Кастомные
+  const seenCp = new Set();
+  locations.forEach(loc=>{
+    getCustomProducts(loc).forEach(cp=>{
+      if (seenCp.has(cp.id)) return;
+      seenCp.add(cp.id);
+      const total = getOldLocTotal(loc, cp.id);
+      const display = fmt(cp.baseUnit, total);
+      allRows.push({pid: cp.id, name: cp.name, unit: cp.baseUnit, total: display, detail: loc, isCustom: true, isOld: false, group:cp.group||'pantry'});
+    });
+  });
+
+  const groupOrder=Object.keys(NOMENCLATURE_GROUPS);
+  allRows.sort((a,b)=>{const ga=groupOrder.indexOf(a.group),gb=groupOrder.indexOf(b.group);const ca=ga<0?groupOrder.length:ga,cb=gb<0?groupOrder.length:gb;return ca-cb||a.name.localeCompare(b.name,'ru');});
+  const filled = allRows.filter(r=>r.total>0).length;
+  document.getElementById('summaryStats').innerHTML=`
+    <div class="ss-card"><div class="ss-val">${allRows.length}</div><div class="ss-lbl">Всего позиций</div></div>
+    <div class="ss-card"><div class="ss-val green">${filled}</div><div class="ss-lbl">Заполнено</div></div>
+    <div class="ss-card"><div class="ss-val blue">${allRows.length?Math.round(filled/allRows.length*100):0}%</div><div class="ss-lbl">Готовность</div></div>
+    <div class="ss-card"><div class="ss-val">${allRows.length-filled}</div><div class="ss-lbl">Пустых</div></div>`;
+
+  let rows = allRows;
+  if (searchQ) rows = rows.filter(r => r.name.toLowerCase().includes(searchQ.toLowerCase()));
+  if (filterOnlyFilled) rows = rows.filter(r => r.total > 0);
+
+  const list = document.getElementById('summaryList');
+  list.innerHTML='';
+  if (rows.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="ei">🔍</div><p>Ничего не найдено</p></div>`;
+    return;
+  }
+
+  rows.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'sum-item' + (r.total===0 ? ' zero' : '') + (r.isCustom ? ' custom' : '');
+    item.innerHTML = `
+      <div class="sum-item-left">
+        <div class="sum-item-name">
+          ${r.name}
+          ${r.isCustom ? ' <span style="font-size:10px;color:var(--warning);background:var(--warning-subtle);padding:1px 6px;border-radius:10px;font-weight:700;">свой</span>' : ''}
+          ${r.isOld ? ' <span style="font-size:10px;color:var(--text-tertiary);background:var(--border-light);padding:1px 6px;border-radius:10px;font-weight:700;">старая</span>' : ''}
+        </div>
+        ${r.detail ? `<div class="sum-item-detail">${r.detail.replace(/\n/g,'<br>')}</div>` : ''}
+      </div>
+      <div class="sum-item-right">
+        <div class="sum-item-val ${r.total===0 ? 'zero' : ''}">${r.total}</div>
+        <div class="sum-item-unit">${r.unit}</div>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+
+/* ═══════════════════════════════════════
+   CLEAR / RESET
+═══════════════════════════════════════ */
+function clearLocation(){
+  showConfirm(`Очистить все данные для "${currentLoc}"?`,()=>{
+    pushUndoSnapshot(`Очистка помещения «${currentLoc}»`);
+    stdProducts.forEach(p=>{
+      const rules=locationRules[currentLoc]?.[p.id];
+      if(rules) rules.forEach((_,uIdx)=>setRows(currentLoc,p.id,uIdx,[null]));
+      setCU(currentLoc,p.id,[]);
+    });
+    NOMENCLATURE.forEach(n=>{
+      if(OLD_TO_EXCEL[n.code]) return;
+      if(!getNqLocs(n.code).includes(currentLoc)) return;
+      setNqRows(n.code, currentLoc, 0, [null]);
+      (n.units||[]).forEach((_,i)=>setNqRows(n.code, currentLoc, i+1, [null]));
+    });
+    let cps=getCustomProducts(currentLoc);
+    cps.forEach(cp=>{ cp.rows=[null]; cp.customUnits=[]; });
+    setCustomProducts(currentLoc,cps);
+    document.getElementById('addProductFormWrap').innerHTML='';
+    renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
+    toast('🧹 Помещение очищено');
+  });
+}
+function fullReset(){
+  showConfirm('⚠️ Удалить ВСЕ данные по всем помещениям?',()=>{
+    pushUndoSnapshot('Полный сброс');
+    locations.forEach(loc=>{
+      stdProducts.forEach(p=>{
+        const rules=locationRules[loc]?.[p.id];
+        if(rules) rules.forEach((_,uIdx)=>setRows(loc,p.id,uIdx,[null]));
+        setCU(loc,p.id,[]);
+      });
+      let custom=getCustomProducts(loc);custom.forEach(cp=>{cp.rows=[null];cp.customUnits=[];});setCustomProducts(loc,custom);
+    });
+    NOMENCLATURE.forEach(n=>{
+      if(OLD_TO_EXCEL[n.code]) return;
+      locations.forEach(loc=>{
+        setNqRows(n.code, loc, 0, [null]);
+        (n.units||[]).forEach((_,i)=>setNqRows(n.code, loc, i+1, [null]));
+      });
+    });
+    document.getElementById('addProductFormWrap').innerHTML='';
+    renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
+    if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+    toast('🗑️ Все данные удалены');
+  });
+}
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+function switchTab(tab){
+  document.querySelectorAll('.tab-view').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('appBody').scrollTop=0;
+  if(tab==='inventory'){
+    document.getElementById('tabInventory').classList.add('active');
+    document.getElementById('navInventory').classList.add('active');
+    document.getElementById('quickAddFab').style.display='flex';
+  } else if(tab==='summary'){
+    document.getElementById('tabSummary').classList.add('active');
+    document.getElementById('navSummary').classList.add('active');
+    document.getElementById('quickAddFab').style.display='none';
+    renderSummary();
+  }
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+function init(){
+  renderLocStrip(); renderStats(); renderCategoryStrip(); renderProducts(); updateNavBadge();
+  updateUndoButton();
+
+  document.getElementById('clearLocBtn').onclick=clearLocation;
+  document.getElementById('hardResetBtn').onclick=fullReset;
+  document.getElementById('addProductBtn').onclick=showAddProductForm;
+  document.getElementById('quickAddFab').onclick=()=>{
+    switchTab('inventory');
+    document.getElementById('appBody').scrollTop=0;
+    showAddProductForm();
+    setTimeout(()=>{
+      const inp=document.getElementById('apfName');
+      if(inp){ inp.focus(); inp.scrollIntoView({behavior:'smooth',block:'center'}); }
+    },100);
+  };
+  document.getElementById('undoBtn').onclick=undoLastAction;
+
+  document.getElementById('confirmOkBtn').onclick=()=>{
+    const cb=_confirmCallback;
+    hideConfirm();
+    if(cb) cb();
+  };
+  document.getElementById('confirmCancelBtn').onclick=hideConfirm;
+
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.onclick=()=>switchTab(btn.dataset.tab);
+  });
+
+  const invSearch=document.getElementById('invSearchInput');
+  const invClear=document.getElementById('invSearchClear');
+  invSearch.oninput=e=>{
+    invSearchQ=e.target.value;
+    invClear.classList.toggle('visible', invSearchQ.length>0);
+    renderProducts();
+  };
+  invClear.onclick=()=>{
+    invSearchQ=''; invSearch.value='';
+    invClear.classList.remove('visible');
+    renderProducts();
+  };
+
+  document.getElementById('searchInput').oninput=e=>{ searchQ=e.target.value; renderSummary(); };
+
+  const btnAll=document.getElementById('filterAllBtn');
+  const btnFilled=document.getElementById('filterFilledBtn');
+  btnAll.onclick=()=>{ filterOnlyFilled=false; btnAll.classList.add('active'); btnFilled.classList.remove('active'); renderSummary(); };
+  btnFilled.onclick=()=>{ filterOnlyFilled=true; btnFilled.classList.add('active'); btnAll.classList.remove('active'); renderSummary(); };
+
+  const appBody=document.getElementById('appBody');
+  const scrollTopFab=document.getElementById('scrollTopFab');
+  appBody.addEventListener('scroll',()=>{ scrollTopFab.classList.toggle('visible', appBody.scrollTop>200); },{passive:true});
+  scrollTopFab.onclick=()=>appBody.scrollTo({top:0,behavior:'smooth'});
+}
+
+init();
+
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
+
