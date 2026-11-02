@@ -1105,7 +1105,7 @@ function buildStdProductCard(product, unitRules, excelMeta){
     showConfirm(`Очистить "${displayName}"?`,()=>{
       pushUndoSnapshot(`Очистка «${displayName}»`);
       unitRules.forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
-      setCU(currentLoc,pid,[]);
+      getCU(currentLoc,pid).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,pid,getCU(currentLoc,pid));
       refreshStdCard(pid,product,unitRules);
     });
   };
@@ -1887,7 +1887,7 @@ function clearLocation(){
     stdProducts.forEach(p=>{
       const rules=locationRules[currentLoc]?.[p.id];
       if(rules) rules.forEach((_,uIdx)=>setRows(currentLoc,p.id,uIdx,[null]));
-      setCU(currentLoc,p.id,[]);
+      getCU(currentLoc,p.id).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,p.id,getCU(currentLoc,p.id));
     });
     NOMENCLATURE.forEach(n=>{
       if(OLD_TO_EXCEL[n.code]) return;
