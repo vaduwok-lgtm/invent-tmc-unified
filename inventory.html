@@ -1624,7 +1624,9 @@ function updateNewSubtotal(code_,uIdx,n){
   if(uIdx===0){
     getNqRows(code_, currentLoc, 0).forEach(v=>{ t += v==null||v===''?0:parseFloat(v); });
   } else {
-    const coef = n.units[uIdx-1]?.[1]||1;
+    const coef = uIdx<=(n.units||[]).length
+      ? (n.units[uIdx-1]?.[1]||1)
+      : (getNqCustomUnits(code_)[uIdx-(n.units||[]).length-1]?.coefficient||1);
     getNqRows(code_, currentLoc, uIdx).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*coef; });
   }
   const el=document.getElementById(`nqust_${code_}_${uIdx}`);
