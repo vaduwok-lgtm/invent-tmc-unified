@@ -1681,6 +1681,22 @@ function toggleCustomUnitForm(body,loc,pid,isForCustomProduct){
 /* ═══════════════════════════════════════
    ADD PRODUCT FORM
 ═══════════════════════════════════════ */
+function inferProductCategory(name){
+  const value=(name||'').toLocaleLowerCase('ru').replace(/ё/g,'е');
+  const rules=[
+    ['promo',/игруш|брелок|сувенир|промо|миньон|космо|мимимишк|хонкай|союзмультфильм/],
+    ['pack',/салфет|бумаг|этикет|крышк|стакан(?!чик)|трубоч|вилк|ложк|ведр|кламшелл|разделител|лопатк|баскет|пакет|коробк|упаков|пачк|тара|оберт|обертка|контейнер/],
+    ['sauce',/соус|топпинг|приправа|спец|маринад|соль|горчиц|кетчуп|майонез|барбекю|терияки|чили|пикадор|цезар|жюльен/],
+    ['meat',/мяс|куриц|курин|птиц|говядин|говяж|индейк|голен|крыл|филе|бекон|котлет|наггет|кревет|рыб|сосиск|колбас|ветчин/],
+    ['veg',/картоф|овощ|лук|гриб|томат|помидор|огур|салат|руккол|зелень|морков|капуст|брокколи|кукуруз/],
+    ['drinks',/напит|вода|чай|кофе|сироп|сок|коктейл|лимонад|милкшейк|молочн.*смес/],
+    ['bakery',/булоч|хлеб|пирож|донат|маффин|чизкейк|тарт|печень|вафел|десерт|тортиль|торт|кекс|круассан|выпеч/],
+    ['pantry',/сыр|молок|масл|мук|круп|сахар|яйц|паниров|кунжут|макарон|фасол|рис|кофейн/]
+  ];
+  for(const [group,pattern] of rules) if(pattern.test(value)) return group;
+  return 'pantry';
+}
+
 function showAddProductForm(){
   const wrap=document.getElementById('addProductFormWrap');
   if(wrap.querySelector('.add-product-form')){ wrap.innerHTML=''; return; }
@@ -1702,10 +1718,15 @@ function showAddProductForm(){
       <button class="apf-cancel" id="apfCancel">Отмена</button>
     </div>`;
   wrap.innerHTML=''; wrap.appendChild(form);
+  const nameInput=form.querySelector('#apfName');
+  const categorySelect=form.querySelector('#apfCategory');
+  nameInput.addEventListener('input',()=>{
+    categorySelect.value=inferProductCategory(nameInput.value);
+  });
   form.querySelector('#apfSave').onclick=()=>{
-    const name=form.querySelector('#apfName').value.trim();
+    const name=nameInput.value.trim();
     const baseUnit=form.querySelector('#apfUnit').value;
-    const group=form.querySelector('#apfCategory').value;
+    const group=categorySelect.value;
     if(!name){ toast('⚠️ Введите название продукта'); return; }
     pushUndoSnapshot(`Добавление «${name}»`);
     const newProduct={id:genId(),name,baseUnit,group,rows:[null],customUnits:[]};
@@ -1721,7 +1742,7 @@ function showAddProductForm(){
     },100);
   };
   form.querySelector('#apfCancel').onclick=()=>{ wrap.innerHTML=''; };
-  form.querySelector('#apfName').focus();
+  nameInput.focus();
 }
 
 /* ═══════════════════════════════════════
