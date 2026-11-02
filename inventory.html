@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Инвентаризация ТМЦ</title>
 <meta name="theme-color" content="#175CD3">
 <style>
@@ -1303,7 +1303,7 @@ function buildCustomProductCard(cp){
       pushUndoSnapshot(`Очистка «${cp.name}»`);
       let cps=getCustomProducts(currentLoc);
       const idx=cps.findIndex(p=>p.id===pid);
-      if(idx!==-1){ cps[idx].rows=[null]; cps[idx].customUnits=[]; setCustomProducts(currentLoc,cps); }
+      if(idx!==-1){ cps[idx].rows=[null]; (cps[idx].customUnits||[]).forEach(unit=>{unit.rows=[null];}); setCustomProducts(currentLoc,cps); }
       refreshCustomCard(pid);
     });
   };
@@ -1861,7 +1861,7 @@ function clearLocation(){
       (n.units||[]).forEach((_,i)=>setNqRows(n.code, currentLoc, i+1, [null]));
     });
     let cps=getCustomProducts(currentLoc);
-    cps.forEach(cp=>{ cp.rows=[null]; cp.customUnits=[]; });
+    cps.forEach(cp=>{ cp.rows=[null]; (cp.customUnits||[]).forEach(unit=>{unit.rows=[null];}); });
     setCustomProducts(currentLoc,cps);
     document.getElementById('addProductFormWrap').innerHTML='';
     renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
@@ -1875,9 +1875,10 @@ function fullReset(){
       stdProducts.forEach(p=>{
         const rules=locationRules[loc]?.[p.id];
         if(rules) rules.forEach((_,uIdx)=>setRows(loc,p.id,uIdx,[null]));
-        setCU(loc,p.id,[]);
+        getCU(loc,p.id).forEach(unit=>{unit.rows=[null];});
+       setCU(loc,p.id,getCU(loc,p.id));
       });
-      let custom=getCustomProducts(loc);custom.forEach(cp=>{cp.rows=[null];cp.customUnits=[];});setCustomProducts(loc,custom);
+      let custom=getCustomProducts(loc);custom.forEach(cp=>{cp.rows=[null];(cp.customUnits||[]).forEach(unit=>{unit.rows=[null];});});setCustomProducts(loc,custom);
     });
     NOMENCLATURE.forEach(n=>{
       if(OLD_TO_EXCEL[n.code]) return;
