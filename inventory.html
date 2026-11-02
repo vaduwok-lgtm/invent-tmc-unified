@@ -1104,8 +1104,7 @@ function buildStdProductCard(product, unitRules, excelMeta){
   clrBtn.onclick=()=>{
     showConfirm(`Очистить "${displayName}"?`,()=>{
       pushUndoSnapshot(`Очистка «${displayName}»`);
-      unitRules.forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
-      getCU(currentLoc,pid).forEach(unit=>{unit.rows=[null];}); setCU(currentLoc,pid,getCU(currentLoc,pid));
+      resetStoredProductCounts(currentLoc,pid);
       refreshStdCard(pid,product,unitRules);
     });
   };
@@ -1212,9 +1211,7 @@ function buildNewProductCard(n){
   clrBtn.onclick=()=>{
     showConfirm(`Очистить "${n.name}"?`,()=>{
       pushUndoSnapshot(`Очистка «${n.name}»`);
-      setNqRows(code_, currentLoc, 0, [null]);
-      (n.units||[]).forEach((_,i)=>setNqRows(code_, currentLoc, i+1, [null]));
-      getNqCustomUnits(code_).forEach((_,i)=>setNqRows(code_,currentLoc,(n.units||[]).length+i+1,[null]));
+      resetStoredProductCounts(currentLoc,code_);
       refreshNewCard(code_);
     });
   };
@@ -1340,9 +1337,7 @@ function buildCustomProductCard(cp){
   clrBtn.onclick=()=>{
     showConfirm(`Очистить "${cp.name}"?`,()=>{
       pushUndoSnapshot(`Очистка «${cp.name}»`);
-      let cps=getCustomProducts(currentLoc);
-      const idx=cps.findIndex(p=>p.id===pid);
-      if(idx!==-1){ cps[idx].rows=[null]; (cps[idx].customUnits||[]).forEach(unit=>{unit.rows=[null];}); setCustomProducts(currentLoc,cps); }
+      resetStoredProductCounts(currentLoc,pid);
       refreshCustomCard(pid);
     });
   };
@@ -1898,6 +1893,34 @@ function renderSummary(){
 /* ═══════════════════════════════════════
    CLEAR / RESET
 ═══════════════════════════════════════ */
+function resetStoredProductCounts(loc,pid){
+  const legacyRowsPrefix=`inv_${loc}_${pid}_`;
+  const legacyUnitsKey=`cu_${loc}_${pid}`;
+  const newRowsPrefix=`nq_${loc}_${pid}_`;
+  const customProductsKey=`cprods_${loc}`;
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&(key.startsWith(legacyRowsPrefix)||key===legacyUnitsKey||key.startsWith(newRowsPrefix)||key===customProductsKey))keys.push(key);
+  }
+  keys.forEach(key=>{
+    try{
+      if(key.startsWith(legacyRowsPrefix)||key.startsWith(newRowsPrefix)){localStorage.setItem(key,'[null]');return;}
+      const rows=JSON.parse(localStorage.getItem(key)||'[]');
+      if(!Array.isArray(rows))return;
+      if(key===legacyUnitsKey){
+        rows.forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+      }else{
+        rows.forEach(product=>{
+          if(!product||product.id!==pid)return;
+          product.rows=[null];
+          (product.customUnits||[]).forEach(unit=>{if(unit&&typeof unit==='object')unit.rows=[null];});
+        });
+      }
+      localStorage.setItem(key,JSON.stringify(rows));
+    }catch(e){console.warn('Не удалось очистить товар',pid,e);}
+  });
+}
 function resetStoredInventoryCounts(locFilter){
   const keys=[];
   for(let i=0;i<localStorage.length;i++){
