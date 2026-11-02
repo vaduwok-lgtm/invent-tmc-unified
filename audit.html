@@ -1,0 +1,2603 @@
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Инвентаризация ТМЦ</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#175CD3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0; padding: 0;
+        }
+
+        /* ── DESIGN TOKENS (Phase 1) ── */
+        :root {
+            --surface: #ffffff;
+            --canvas: #f7f8fa;
+            --border: #e4e7ec;
+            --border-light: #f2f4f7;
+            --text-primary: #101828;
+            --text-secondary: #667085;
+            --text-tertiary: #98a2b3;
+            --accent: #175cd3;
+            --accent-hover: #1849a9;
+            --accent-subtle: #eff4ff;
+            --success: #067647;
+            --success-subtle: #ecfdf3;
+            --warning: #b54708;
+            --warning-subtle: #fffaeb;
+            --danger: #b42318;
+            --danger-subtle: #fef3f2;
+            --purple: #6941c6;
+            --purple-subtle: #f4f3ff;
+            --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+            --shadow-lg: 0 4px 12px rgba(16, 24, 40, 0.12), 0 2px 4px rgba(16, 24, 40, 0.06);
+            --radius-sm: 8px;
+            --radius-md: 10px;
+            --radius-lg: 12px;
+            --header-h: 48px;
+            --nav-h: 56px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --font-sans: 'Inter', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --ease: 100ms ease;
+
+            /* Legacy aliases — keeps existing component CSS working */
+            --primary: var(--accent);
+            --primary-light: var(--accent-subtle);
+            --primary-dark: var(--accent-hover);
+            --green: var(--success);
+            --green-light: var(--success-subtle);
+            --red: var(--danger);
+            --red-light: var(--danger-subtle);
+            --orange: var(--warning);
+            --orange-light: var(--warning-subtle);
+            --purple-light: var(--purple-subtle);
+            --purple-dark: #53389e;
+            --gray-50: var(--canvas);
+            --gray-100: var(--border-light);
+            --gray-200: var(--border);
+            --gray-300: #d0d5dd;
+            --gray-400: var(--text-tertiary);
+            --gray-500: var(--text-secondary);
+            --gray-600: var(--text-secondary);
+            --gray-700: #344054;
+            --gray-800: var(--text-primary);
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.5;
+            background: var(--canvas);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ── ICON SYSTEM ── */
+        .icon {
+            display: block;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            color: currentColor;
+        }
+        .icon--logo { width: 18px; height: 18px; }
+
+        /* ── HEADER ── */
+        .app-header {
+            height: var(--header-h);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: var(--text-primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #fff;
+        }
+        .header-brand { flex: 1; min-width: 0; }
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .header-undo-btn,
+        .header-reset-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color var(--ease), color var(--ease);
+        }
+        .header-undo-btn:hover:not(:disabled),
+        .header-reset-btn:hover {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+        .header-undo-btn:active:not(:disabled) {
+            background: var(--accent-subtle);
+            color: var(--accent);
+        }
+        .header-reset-btn:active {
+            background: var(--danger-subtle);
+            color: var(--danger);
+        }
+        .header-undo-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .header-undo-btn:focus-visible,
+        .header-reset-btn:focus-visible,
+        .nav-btn:focus-visible,
+        .scroll-top-fab:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        .undo-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 99px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid var(--surface);
+        }
+
+        /* ── BODY ── */
+        .app-body {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px);
+        }
+
+        /* ── BOTTOM NAV ── */
+        .bottom-nav {
+            height: calc(var(--nav-h) + var(--safe-bottom));
+            padding-bottom: var(--safe-bottom);
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: stretch;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .nav-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            touch-action: manipulation;
+            color: var(--text-tertiary);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 6px 4px 8px;
+            transition: color var(--ease);
+            position: relative;
+        }
+        .nav-btn .nav-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+        }
+        .nav-btn.active {
+            color: var(--accent);
+        }
+        .nav-btn.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 0 0 2px 2px;
+        }
+        .nav-badge {
+            position: absolute;
+            top: 4px;
+            right: calc(50% - 22px);
+            background: var(--success);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 99px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid var(--surface);
+        }
+
+        /* ── TAB VIEWS ── */
+        .tab-view { display: none; }
+        .tab-view.active { display: block; }
+
+        /* Category strip — base layout (Phase 2 will refine) */
+        .category-strip-wrap {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .category-strip-wrap::-webkit-scrollbar { display: none; }
+        .category-chip {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .category-chip.active {
+            color: var(--accent);
+            border-color: var(--accent-subtle);
+            background: var(--accent-subtle);
+        }
+
+        /* ══════════════════════════════════
+           INVENTORY TAB
+        ══════════════════════════════════ */
+        .loc-strip-wrap {
+            background: #fff; border-bottom: 1px solid var(--gray-200);
+            padding: 10px 12px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+            display: flex; gap: 8px; scrollbar-width: none;
+        }
+        .loc-strip-wrap::-webkit-scrollbar { display: none; }
+        .loc-chip {
+            flex-shrink: 0; padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: 600; border: 1.5px solid var(--gray-200);
+            background: #fff; color: var(--gray-500); cursor: pointer;
+            touch-action: manipulation; transition: all 0.15s;
+            white-space: nowrap; display: flex; align-items: center; gap: 6px;
+        }
+        .loc-chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .loc-chip .loc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: none; }
+        .loc-chip.has-data .loc-dot { display: block; }
+        .loc-chip.active .loc-dot { background: rgba(255,255,255,0.7); }
+
+        .stats-row { display: flex; gap: 10px; padding: 12px 12px 0; }
+        .stat-pill {
+            flex: 1; background: #fff; border: 1px solid var(--gray-200);
+            border-radius: 12px; padding: 10px 8px; text-align: center;
+        }
+        .stat-pill .sp-val { font-size: 20px; font-weight: 700; color: var(--gray-800); line-height: 1; }
+        .stat-pill .sp-val.green { color: var(--green); }
+        .stat-pill .sp-val.blue { color: var(--primary); }
+        .stat-pill .sp-lbl { font-size: 10px; color: var(--gray-400); margin-top: 3px; font-weight: 500; }
+
+        .products-list { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+        .product-card {
+            background: #fff; border: 1px solid var(--gray-200);
+            border-radius: 16px; overflow: hidden;
+        }
+        .product-card.has-data { border-color: #bfdbfe; }
+        .product-card.custom-product { border-color: #fed7aa; }
+        .product-card.custom-product.has-data { border-color: #fb923c; }
+
+        .product-header {
+            display: flex; align-items: center; padding: 14px 14px 14px 16px;
+            gap: 10px; cursor: pointer; touch-action: manipulation; user-select: none;
+        }
+        .product-indicator {
+            width: 4px; align-self: stretch; border-radius: 4px;
+            background: var(--gray-200); flex-shrink: 0; margin-left: -4px;
+        }
+        .product-card.has-data .product-indicator { background: var(--primary); }
+        .product-card.custom-product .product-indicator { background: #fed7aa; }
+        .product-card.custom-product.has-data .product-indicator { background: var(--orange); }
+
+        .product-name { flex: 1; font-size: 15px; font-weight: 700; color: var(--gray-800); line-height: 1.3; }
+        .product-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+        .product-total { font-size: 16px; font-weight: 700; color: var(--primary); }
+        .product-total.zero { color: var(--gray-300); }
+        .product-unit-tag {
+            font-size: 11px; color: var(--gray-400); background: var(--gray-100);
+            padding: 2px 8px; border-radius: 20px; font-weight: 600;
+        }
+        .custom-tag {
+            font-size: 10px; color: var(--orange); background: var(--orange-light);
+            padding: 2px 8px; border-radius: 20px; font-weight: 700;
+        }
+        .product-chevron { font-size: 18px; color: var(--gray-300); transition: transform 0.2s; flex-shrink: 0; }
+        .product-card.open .product-chevron { transform: rotate(180deg); }
+
+        .product-body {
+            display: none; border-top: 1px solid var(--gray-100);
+            padding: 12px; background: var(--gray-50);
+        }
+        .product-card.open .product-body { display: block; }
+
+        .unit-block {
+            margin-bottom: 10px; background: #fff;
+            border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden;
+        }
+        .unit-block:last-of-type { margin-bottom: 0; }
+        .unit-block-header {
+            padding: 8px 12px; background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-100);
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .unit-name { font-size: 12px; font-weight: 700; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.04em; }
+        .unit-subtotal { font-size: 12px; font-weight: 600; color: var(--primary); }
+        .unit-rows { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+
+        .row-item { display: flex; align-items: center; gap: 6px; }
+        .row-num { width: 20px; text-align: center; font-size: 11px; color: var(--gray-400); font-weight: 600; flex-shrink: 0; }
+
+        .vc {
+            flex: 1; display: flex; align-items: center; background: var(--gray-100);
+            border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-200); height: 48px;
+        }
+        .vc-btn {
+            width: 48px; height: 48px; flex-shrink: 0; background: transparent; border: none;
+            font-size: 26px; font-weight: 300; color: var(--gray-600); cursor: pointer;
+            touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+            transition: background 0.1s;
+        }
+        .vc-btn:active { background: var(--primary); color: white; }
+        .vc-input {
+            flex: 1; text-align: center; font-size: 18px; font-weight: 700;
+            background: #fff; border: none; color: var(--gray-800);
+            padding: 0 4px; height: 100%; min-width: 0;
+        }
+        .vc-input:focus { outline: none; }
+        .vc-input::placeholder { color: var(--gray-300); font-weight: 400; }
+
+        .row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .row-action-btn {
+            width: 40px; height: 48px; border-radius: 10px; border: 1px solid var(--gray-200);
+            background: #fff; font-size: 18px; font-weight: bold; cursor: pointer;
+            touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+            color: var(--gray-500); transition: all 0.1s;
+        }
+        .row-action-btn:active { background: var(--gray-200); }
+        .row-action-btn.del { background: var(--red-light); color: var(--red); border-color: #fecaca; }
+        .row-action-btn.del:active { background: #fecaca; }
+
+        .product-footer { padding: 10px 12px 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .add-custom-btn, .clear-product-btn, .delete-product-btn {
+            flex: 1; padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600;
+            border: 1.5px dashed var(--gray-300); background: transparent; color: var(--gray-500);
+            cursor: pointer; touch-action: manipulation; text-align: center;
+        }
+        .add-custom-btn:active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); border-style: solid; }
+        .clear-product-btn { border-color: #fecaca; color: var(--red); }
+        .clear-product-btn:active { background: var(--red-light); }
+        .delete-product-btn { border-color: #fed7aa; color: var(--orange); border-style: solid; background: var(--orange-light); }
+        .delete-product-btn:active { background: #fed7aa; }
+
+        .custom-form {
+            margin: 0 12px 12px; background: var(--primary-light);
+            border: 1px solid #bfdbfe; border-radius: 12px;
+            padding: 12px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .custom-form-title { font-size: 13px; font-weight: 700; color: var(--primary); }
+        .custom-form input {
+            background: #fff; border: 1px solid #bfdbfe; padding: 10px 12px;
+            border-radius: 10px; color: var(--gray-800); font-size: 14px; width: 100%;
+        }
+        .custom-form input:focus { outline: 2px solid var(--primary); }
+        .custom-form-btns { display: flex; gap: 8px; }
+        .custom-form-btns button {
+            flex: 1; padding: 10px; border-radius: 10px; font-size: 14px;
+            font-weight: 700; border: none; cursor: pointer; touch-action: manipulation;
+        }
+        .cf-save { background: var(--primary); color: white; }
+        .cf-cancel { background: var(--gray-100); color: var(--gray-600); }
+
+        .add-product-form {
+            margin: 0 12px 12px; background: var(--orange-light);
+            border: 1px solid #fed7aa; border-radius: 16px;
+            padding: 14px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .add-product-form-title { font-size: 14px; font-weight: 700; color: var(--orange); }
+        .add-product-form input, .add-product-form select {
+            background: #fff; border: 1px solid #fed7aa; padding: 12px;
+            border-radius: 10px; color: var(--gray-800); font-size: 15px; width: 100%;
+        }
+        .add-product-form input:focus, .add-product-form select:focus { outline: 2px solid var(--orange); }
+        .add-product-form-btns { display: flex; gap: 8px; }
+        .add-product-form-btns button {
+            flex: 1; padding: 12px; border-radius: 10px; font-size: 14px;
+            font-weight: 700; border: none; cursor: pointer; touch-action: manipulation;
+        }
+        .apf-save { background: var(--orange); color: white; }
+        .apf-cancel { background: var(--gray-100); color: var(--gray-600); }
+
+        .add-product-btn {
+            margin: 0 12px 4px; padding: 14px; border-radius: 14px;
+            font-size: 14px; font-weight: 700; border: 2px dashed #fed7aa;
+            background: var(--orange-light); color: var(--orange); cursor: pointer;
+            touch-action: manipulation; text-align: center; width: calc(100% - 24px);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .add-product-btn:active { background: #fed7aa; }
+
+        .clear-loc-btn {
+            margin: 8px 12px 12px; width: calc(100% - 24px); padding: 14px;
+            background: var(--red-light); border: 1.5px solid #fecaca;
+            border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--red);
+            cursor: pointer; touch-action: manipulation; text-align: center;
+        }
+        .clear-loc-btn:active { background: #fecaca; }
+
+        .empty-state { text-align: center; padding: 48px 24px; color: var(--gray-400); }
+        .empty-state .ei { font-size: 52px; margin-bottom: 12px; }
+        .empty-state p { font-size: 15px; }
+
+        /* ══════════════════════════════════
+           SUMMARY TAB
+        ══════════════════════════════════ */
+        .summary-header { padding: 16px 16px 12px; }
+        .summary-header h2 { font-size: 18px; font-weight: 700; }
+        .summary-header p { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+        .summary-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 16px; }
+        .ss-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 14px; }
+        .ss-card .ss-val { font-size: 26px; font-weight: 700; color: var(--gray-800); line-height: 1; }
+        .ss-card .ss-val.green { color: var(--green); }
+        .ss-card .ss-val.blue { color: var(--primary); }
+        .ss-card .ss-lbl { font-size: 12px; color: var(--gray-400); margin-top: 4px; font-weight: 500; }
+        .search-wrap { padding: 0 16px 12px; position: relative; }
+        .search-wrap input {
+            width: 100%; background: #fff; border: 1.5px solid var(--gray-200);
+            border-radius: 12px; padding: 12px 16px 12px 40px; font-size: 15px; color: var(--gray-800);
+        }
+        .search-wrap input:focus { outline: none; border-color: var(--primary); }
+        .search-icon { position: absolute; left: 28px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--gray-400); pointer-events: none; }
+        .filter-row { padding: 0 16px 12px; display: flex; gap: 8px; }
+        .filter-chip {
+            padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-500);
+            cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+        }
+        .filter-chip.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .summary-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+        .sum-item {
+            background: #fff; border: 1px solid var(--gray-200); border-radius: 14px;
+            padding: 14px; display: flex; align-items: flex-start; gap: 10px;
+        }
+        .sum-item.zero { opacity: 0.5; }
+        .sum-item.custom { border-color: #fed7aa; }
+        .sum-item-left { flex: 1; }
+        .sum-item-name { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 4px; }
+        .sum-item-detail { font-size: 11px; color: var(--gray-400); line-height: 1.5; }
+        .sum-item-right { text-align: right; flex-shrink: 0; }
+        .sum-item-val { font-size: 20px; font-weight: 700; color: var(--primary); line-height: 1; }
+        .sum-item-val.zero { color: var(--gray-300); }
+        .sum-item-unit { font-size: 11px; color: var(--gray-400); font-weight: 600; margin-top: 3px; }
+
+        /* ══════════════════════════════════
+           DS TAB
+        ══════════════════════════════════ */
+        .ds-content { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+        /* Секция */
+        .ds-section {
+            background: #fff; border: 1px solid var(--gray-200);
+            border-radius: 16px; overflow: hidden;
+        }
+        .ds-section-header {
+            padding: 14px 16px; background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .ds-section-title {
+            font-size: 15px; font-weight: 700; color: var(--gray-800);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ds-section-total {
+            font-size: 16px; font-weight: 700; color: var(--purple);
+        }
+
+        /* Номиналы сейфа */
+        .safe-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+        .nominal-row {
+            background: var(--gray-50); border: 1px solid var(--gray-200);
+            border-radius: 12px; overflow: hidden;
+        }
+        .nominal-header {
+            padding: 8px 12px; display: flex; align-items: center;
+            justify-content: space-between; gap: 8px;
+            user-select: none;
+        }
+        .nominal-label {
+            font-size: 14px; font-weight: 700; color: var(--gray-700);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .nominal-badge {
+            background: var(--purple-light); color: var(--purple);
+            font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+        }
+        .nominal-count {
+            font-size: 12px; font-weight: 600; color: var(--gray-400);
+        }
+        .nominal-sum {
+            font-size: 14px; font-weight: 700; color: var(--purple);
+        }
+        .nominal-sum.zero { color: var(--gray-300); }
+        .nominal-rows-wrap {
+            display: block; padding: 0 8px 8px;
+        }
+
+        /* Строки номинала */
+        .nominal-input-rows { display: flex; flex-direction: column; gap: 6px; }
+        .nom-row-item { display: flex; align-items: center; gap: 6px; }
+        .nom-row-num { width: 20px; text-align: center; font-size: 11px; color: var(--gray-400); font-weight: 600; flex-shrink: 0; }
+
+        .nom-vc {
+            flex: 1; display: flex; align-items: center; background: var(--gray-100);
+            border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-200); height: 48px;
+        }
+        .nom-vc-btn {
+            width: 48px; height: 48px; flex-shrink: 0; background: transparent; border: none;
+            font-size: 26px; font-weight: 300; color: var(--gray-600); cursor: pointer;
+            touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+            transition: background 0.1s;
+        }
+        .nom-vc-btn:active { background: var(--purple); color: white; }
+        .nom-vc-input {
+            flex: 1; text-align: center; font-size: 18px; font-weight: 700;
+            background: #fff; border: none; color: var(--gray-800);
+            padding: 0 4px; height: 100%; min-width: 0;
+        }
+        .nom-vc-input:focus { outline: none; }
+        .nom-vc-input::placeholder { color: var(--gray-300); font-weight: 400; }
+
+        .nom-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .nom-row-btn {
+            width: 40px; height: 48px; border-radius: 10px; border: 1px solid var(--gray-200);
+            background: #fff; font-size: 18px; font-weight: bold; cursor: pointer;
+            touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+            color: var(--gray-500);
+        }
+        .nom-row-btn:active { background: var(--gray-200); }
+        .nom-row-btn.del { background: var(--red-light); color: var(--red); border-color: #fecaca; }
+        .nom-row-btn.del:active { background: #fecaca; }
+
+        /* Итого сейфа */
+        .safe-total-row {
+            margin: 4px 12px 12px; padding: 14px 16px;
+            background: var(--purple-light); border: 1.5px solid #ddd6fe;
+            border-radius: 12px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .safe-bags-list { padding: 0 12px; display: flex; flex-direction: column; gap: 8px; }
+        .safe-bag-add-btn { width: calc(100% - 24px); margin: 10px 12px 0; }
+        .safe-bag-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+        .safe-bag-card .cash-card-header { padding: 12px 14px; }
+        .safe-bag-card .cash-card-body { padding: 10px 12px 12px; }
+        .safe-bag-card .cash-field { background: var(--canvas); }
+        .safe-bag-card .cash-result-row { margin-top: 0; }
+        .safe-total-label { font-size: 14px; font-weight: 700; color: var(--purple); }
+        .safe-total-val { font-size: 22px; font-weight: 700; color: var(--purple); }
+
+        /* Касса / Авто карточка */
+        .cash-card {
+            background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden;
+        }
+        .cash-card-header {
+            padding: 12px 16px; background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .cash-card-title { font-size: 15px; font-weight: 700; color: var(--gray-800); display: flex; align-items: center; gap: 8px; }
+        .cash-card-result {
+            font-size: 15px; font-weight: 700;
+        }
+        .cash-card-result.positive { color: var(--green); }
+        .cash-card-result.negative { color: var(--red); }
+        .cash-card-result.zero { color: var(--gray-300); }
+
+        .cash-card-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+        .cash-field {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--gray-50); border: 1px solid var(--gray-200);
+            border-radius: 12px; padding: 10px 14px;
+        }
+        .cash-field-label { font-size: 13px; font-weight: 600; color: var(--gray-500); flex: 1; }
+        .cash-field-input {
+            background: #fff; border: 1.5px solid var(--gray-200);
+            border-radius: 10px; padding: 10px 14px; font-size: 17px; font-weight: 700;
+            color: var(--gray-800); text-align: right; width: 160px;
+        }
+        .cash-field-input:focus { outline: none; border-color: var(--purple); }
+        .cash-field-input::placeholder { color: var(--gray-300); font-weight: 400; }
+
+        .cash-result-row {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--purple-light); border: 1.5px solid #ddd6fe;
+            border-radius: 12px; padding: 12px 14px;
+        }
+        .cash-result-label { font-size: 13px; font-weight: 700; color: var(--purple); flex: 1; }
+        .cash-result-val { font-size: 20px; font-weight: 700; }
+        .cash-result-val.positive { color: var(--green); }
+        .cash-result-val.negative { color: var(--red); }
+        .cash-result-val.zero { color: var(--gray-300); }
+
+        .cash-card-footer { padding: 0 12px 12px; }
+        .delete-cash-btn {
+            width: 100%; padding: 10px; border-radius: 10px;
+            background: var(--red-light); border: 1px solid #fecaca;
+            color: var(--red); font-size: 13px; font-weight: 700;
+            cursor: pointer; touch-action: manipulation; text-align: center;
+        }
+        .delete-cash-btn:active { background: #fecaca; }
+
+        /* Кнопки добавления */
+        .add-cash-btn {
+            width: 100%; padding: 14px; border-radius: 14px;
+            font-size: 14px; font-weight: 700;
+            border: 2px dashed #ddd6fe; background: var(--purple-light);
+            color: var(--purple); cursor: pointer; touch-action: manipulation;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .add-cash-btn:active { background: #ddd6fe; }
+
+        /* Общий итог ДС */
+        .ds-grand-total {
+            background: var(--gray-800); border-radius: 16px;
+            padding: 20px; margin: 0;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .ds-grand-title { font-size: 13px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.05em; }
+        .ds-grand-breakdown { display: flex; flex-direction: column; gap: 6px; }
+        .ds-grand-line { display: flex; justify-content: space-between; align-items: center; }
+        .ds-grand-line-label { font-size: 13px; color: var(--gray-400); }
+        .ds-grand-line-val { font-size: 14px; font-weight: 600; color: var(--gray-200); }
+        .ds-grand-divider { height: 1px; background: var(--gray-600); margin: 4px 0; }
+        .ds-grand-sum-row { display: flex; justify-content: space-between; align-items: center; }
+        .ds-grand-sum-label { font-size: 16px; font-weight: 700; color: white; }
+        .ds-grand-sum-val { font-size: 28px; font-weight: 700; color: #a5f3fc; }
+        .cashbook-row { display: flex; align-items: center; gap: 10px; padding-top: 2px; }
+        .cashbook-label { flex: 1; font-size: 13px; color: var(--gray-400); }
+        .cashbook-input { width: 150px; padding: 8px 10px; border: 1px solid var(--gray-600); border-radius: 8px; background: rgba(255,255,255,.06); color: #fff; text-align: right; font: inherit; }
+        .cashbook-input:focus { outline: 2px solid rgba(165,243,252,.55); outline-offset: 1px; }
+        .cashbook-diff { font-size: 12px; color: var(--gray-400); text-align: right; min-height: 18px; }
+
+        /* Кнопка очистки ДС */
+        .ds-clear-btn {
+            width: 100%; padding: 14px; background: var(--red-light);
+            border: 1.5px solid #fecaca; border-radius: 12px;
+            font-size: 14px; font-weight: 700; color: var(--red);
+            cursor: pointer; touch-action: manipulation; text-align: center;
+        }
+        .ds-clear-btn:active { background: #fecaca; }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed;
+            bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            background: var(--text-primary);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 150ms ease, transform 150ms ease;
+            z-index: 1000;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: var(--shadow-lg);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── CONFIRM MODAL ── */
+        .confirm-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(16, 24, 40, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 150ms ease;
+        }
+        .confirm-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .confirm-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: var(--shadow-lg);
+        }
+        .confirm-msg {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+        .confirm-btns {
+            display: flex;
+            gap: 8px;
+        }
+        .confirm-btns button {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color var(--ease), color var(--ease);
+        }
+        .confirm-cancel {
+            background: var(--border-light);
+            color: var(--text-secondary);
+        }
+        .confirm-ok {
+            background: var(--danger);
+            color: #fff;
+        }
+        .confirm-btns button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ── SCROLL FAB ── */
+        .scroll-top-fab {
+            position: fixed;
+            right: 16px;
+            bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+            width: 44px;
+            height: 44px;
+            border: 0;
+            border-radius: 50%;
+            background: var(--text-primary);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 150ms ease;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scroll-top-fab.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ── PHASE 1 POLISH ── */
+        .sp-val, .ss-val, .product-total, .sum-item-val,
+        .nominal-sum, .safe-total-val, .cash-card-result,
+        .cash-result-val, .ds-grand-sum-val, .vc-input, .nom-vc-input {
+            font-variant-numeric: tabular-nums;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    .suite-back-link{position:relative;z-index:2;align-self:flex-start;margin:8px 12px 0;padding:8px 12px;border:1px solid var(--border,#e4e7ec);border-radius:12px;background:rgba(255,255,255,.94);color:var(--text-secondary,#667085);font-size:12px;line-height:1.2;font-weight:600;font-family:inherit;text-decoration:none;box-shadow:0 2px 8px rgba(16,24,40,.08);backdrop-filter:blur(8px)}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="logo" aria-hidden="true">
+        <svg class="icon icon--logo" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="3" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="11" y="3" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="3" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+    </div>
+    <div class="header-brand">
+        <div class="header-title">Инвентаризация</div>
+    </div>
+    <div class="header-actions">
+        <button class="header-undo-btn" id="undoBtn" type="button" title="Отменить последнее действие" aria-label="Отменить последнее действие" disabled>
+            <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M6.5 7H3.5V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4.5 10a5.5 5.5 0 1 0 1.1-3.3L3.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="undo-badge" id="undoBadge" style="display:none;"></span>
+        </button>
+        <button class="header-reset-btn" id="hardResetBtn" type="button" title="Полный сброс" aria-label="Полный сброс">
+            <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 6h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M7.5 6V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.5 6l.75 10h6.5l.75-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </div>
+</header>
+<a class="suite-back-link" href="./index.html">← Выбрать режим</a>
+
+<div class="app-body" id="appBody">
+
+    <!-- ══ TAB: INVENTORY ══ -->
+    <div class="tab-view active" id="tabInventory">
+        <div class="loc-strip-wrap" id="locStrip"></div>
+        <div class="stats-row">
+            <div class="stat-pill"><div class="sp-val" id="stTotal">—</div><div class="sp-lbl">Позиций</div></div>
+            <div class="stat-pill"><div class="sp-val green" id="stFilled">—</div><div class="sp-lbl">Заполнено</div></div>
+            <div class="stat-pill"><div class="sp-val blue" id="stPct">—</div><div class="sp-lbl">Готовность</div></div>
+        </div>
+        <div class="category-strip-wrap" id="categoryStrip" aria-label="Категории товаров"></div>
+        <div class="products-list" id="productsList"></div>
+        <div id="addProductFormWrap"></div>
+        <button class="add-product-btn" id="addProductBtn">➕ Добавить свой продукт</button>
+        <button class="clear-loc-btn" id="clearLocBtn">🧹 Очистить помещение</button>
+    </div>
+
+    <!-- ══ TAB: SUMMARY ══ -->
+    <div class="tab-view" id="tabSummary">
+        <div class="summary-header"><h2>Итоги</h2><p>По всем помещениям</p></div>
+        <div class="summary-stats" id="summaryStats"></div>
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Поиск продукта...">
+        </div>
+        <div class="filter-row">
+            <button class="filter-chip" id="filterAllBtn">Все</button>
+            <button class="filter-chip active" id="filterFilledBtn">Только заполненные</button>
+        </div>
+        <div class="summary-list" id="summaryList"></div>
+    </div>
+
+    <!-- ══ TAB: DS ══ -->
+    <div class="tab-view" id="tabDs">
+        <div class="ds-content">
+
+            <!-- СЕЙФ -->
+            <div class="ds-section">
+                <div class="ds-section-header">
+                    <div class="ds-section-title">🏦 Сейф</div>
+                    <div class="ds-section-total" id="safeTotalHeader">0 ₽</div>
+                </div>
+                <div class="safe-body" id="safeBody"></div>
+                <div id="safeBagsList" class="safe-bags-list"></div>
+                <button class="add-cash-btn safe-bag-add-btn" id="addSafeBagBtn">＋ Добавить сейф-пакет</button>
+                <div class="safe-total-row">
+                    <div class="safe-total-label">ИТОГО по сейфу</div>
+                    <div class="safe-total-val" id="safeTotal">0 ₽</div>
+                </div>
+            </div>
+
+            <!-- КАССЫ -->
+            <div class="ds-section">
+                <div class="ds-section-header">
+                    <div class="ds-section-title">💵 Кассы</div>
+                    <div class="ds-section-total" id="kassaTotalHeader">0 ₽</div>
+                </div>
+                <div style="padding:10px 12px; display:flex; flex-direction:column; gap:10px;">
+                    <div id="kassaList"></div>
+                    <button class="add-cash-btn" id="addKassaBtn">➕ Добавить кассу</button>
+                </div>
+            </div>
+
+            <!-- АВТО -->
+            <div class="ds-section">
+                <div class="ds-section-header">
+                    <div class="ds-section-title">🚗 Авто кассы</div>
+                    <div class="ds-section-total" id="avtoTotalHeader">0 ₽</div>
+                </div>
+                <div style="padding:10px 12px; display:flex; flex-direction:column; gap:10px;">
+                    <div id="avtoList"></div>
+                    <button class="add-cash-btn" id="addAvtoBtn">➕ Добавить авто кассу</button>
+                </div>
+            </div>
+
+            <!-- ОБЩИЙ ИТОГ -->
+            <div class="ds-grand-total" id="dsGrandTotal">
+                <div class="ds-grand-title">Общий итог ДС</div>
+                <div class="ds-grand-breakdown" id="dsGrandBreakdown"></div>
+                <div class="ds-grand-divider"></div>
+                <div class="ds-grand-sum-row">
+                    <div class="ds-grand-sum-label">ИТОГО</div>
+                    <div class="ds-grand-sum-val" id="dsGrandSum">0 ₽</div>
+                </div>
+                <div class="cashbook-row">
+                    <label class="cashbook-label" for="cashBookInput">По кассовой книге</label>
+                    <input class="cashbook-input" id="cashBookInput" type="number" inputmode="decimal" min="0" placeholder="0">
+                </div>
+                <div class="cashbook-diff" id="cashBookDiff"></div>
+            </div>
+
+            <button class="ds-clear-btn" id="dsClearBtn">🧹 Очистить все данные ДС</button>
+        </div>
+    </div>
+
+</div>
+
+<nav class="bottom-nav" aria-label="Основная навигация">
+    <button class="nav-btn active" id="navInventory" type="button" data-tab="inventory" aria-current="page">
+        <span class="nav-icon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 20 20" fill="none">
+                <rect x="5.5" y="4.5" width="9" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M7.5 4.5V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M8 9h4M8 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </span>
+        Подсчёт
+    </button>
+    <button class="nav-btn" id="navSummary" type="button" data-tab="summary">
+        <span class="nav-icon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 20 20" fill="none">
+                <path d="M4 16V8M8 16V4M12 16v-6M16 16v-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </span>
+        Итоги
+        <span class="nav-badge" id="navBadge" style="display:none;"></span>
+    </button>
+    <button class="nav-btn" id="navDs" type="button" data-tab="ds">
+        <span class="nav-icon" aria-hidden="true">
+            <svg class="icon" viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="5.5" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+        </span>
+        ДС
+    </button>
+</nav>
+
+<button class="scroll-top-fab" id="scrollTopFab" type="button" aria-label="Наверх">
+    <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 5v10M6 9l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+        <div class="confirm-msg" id="confirmMsg"></div>
+        <div class="confirm-btns">
+            <button class="confirm-cancel" id="confirmCancelBtn">Отмена</button>
+            <button class="confirm-ok" id="confirmOkBtn">Да, удалить</button>
+        </div>
+    </div>
+</div>
+
+<script>(()=>{'use strict';const p="combined:audit:";const g=Storage.prototype.getItem,s=Storage.prototype.setItem,r=Storage.prototype.removeItem,c=Storage.prototype.clear,k=Storage.prototype.key;const own=()=>{const a=[];for(let i=0;i<Storage.prototype.__nativeLength.call(localStorage);i++){const x=k.call(localStorage,i);if(x&&x.startsWith(p))a.push(x.slice(p.length));}return a};Object.defineProperty(Storage.prototype,'__nativeLength',{value:Object.getOwnPropertyDescriptor(Storage.prototype,'length').get,configurable:true});Object.defineProperty(Storage.prototype,'length',{get(){return own().length},configurable:true});Storage.prototype.getItem=function(x){return g.call(this,p+String(x))};Storage.prototype.setItem=function(x,v){return s.call(this,p+String(x),v)};Storage.prototype.removeItem=function(x){return r.call(this,p+String(x))};Storage.prototype.clear=function(){for(let i=this.length-1;i>=0;i--){const x=this.key(i);if(x!==null)this.removeItem(x)}};Storage.prototype.key=function(i){const a=own();return a[i]??null};})();</script>
+<script>
+(function () {
+
+    /* ════════════════════════════════
+       СТАНДАРТНЫЕ ПРОДУКТЫ
+    ════════════════════════════════ */
+    const stdProducts = [
+        { id:"p1",  name:"Голень",                    baseUnit:"шт" },
+        { id:"p2",  name:"Крылья",                    baseUnit:"шт" },
+        { id:"p3",  name:"Байтсы",                    baseUnit:"кг" },
+        { id:"p4",  name:"Филе Классик",              baseUnit:"шт" },
+        { id:"p5",  name:"Филе Зингер",               baseUnit:"шт" },
+        { id:"p6",  name:"Филе куриное малое",        baseUnit:"шт" },
+        { id:"p7",  name:"Филе куриное малое острое", baseUnit:"шт" },
+        { id:"p8",  name:"Наггетсы",                  baseUnit:"шт" },
+        { id:"p9",  name:"Креветки",                  baseUnit:"кг" },
+        { id:"p10", name:"Картофель фри",             baseUnit:"кг" },
+        { id:"p11", name:"Картофельные дольки",       baseUnit:"кг" },
+        { id:"p12", name:"Смесь для мороженого",      baseUnit:"кг" },
+        { id:"p13", name:"Смесь для коктейля",        baseUnit:"кг" },
+        { id:"p14", name:"Молоко",                    baseUnit:"л"  },
+        { id:"p15", name:"Сыр Хохланд",               baseUnit:"шт" },
+        { id:"p16", name:"Кофе",                      baseUnit:"кг" },
+        { id:"p17", name:"Мука",                      baseUnit:"кг" },
+        { id:"p18", name:"Пиво Бад бочковое",         baseUnit:"л"  },
+        { id:"p19", name:"Пиво RED FINCH В КЕГЕ",     baseUnit:"л"  },
+        { id:"p20", name:"Баллон СО₂ Пепси 20 мл",   baseUnit:"шт" },
+        { id:"p21", name:"Баллон газовый СО₂ ПИВО",  baseUnit:"шт" },
+        { id:"p22", name:"Кега мал пиво 20 л",        baseUnit:"шт" },
+        { id:"p23", name:"Кега бол пиво 30 л",        baseUnit:"шт" },
+        { id:"p24", name:"Котлета куриная",            baseUnit:"кг" },
+        { id:"p25", name:"Котлета сырная",             baseUnit:"кг" },
+        { id:"p26", name:"Бекон нарезанный",           baseUnit:"кг" },
+        { id:"p27", name:"Масло фритюрное",            baseUnit:"кг" }
+    ];
+
+    const PRODUCT_CATEGORIES = {
+        chicken: { label:'Курица', ids:['p1','p2','p3','p4','p5','p6','p7'] },
+        potato: { label:'Картофель', ids:['p8','p9','p10','p11','p24','p25'] },
+        mixes: { label:'Смеси', ids:['p12','p13','p14'] },
+        pantry: { label:'Бакалея', ids:['p15','p16','p17','p26','p27'] },
+        beer: { label:'Пиво', ids:['p18','p19'] },
+        containers: { label:'Тара', ids:['p20','p21','p22','p23'] }
+    };
+    function productCategory(id){
+        return Object.keys(PRODUCT_CATEGORIES).find(key=>PRODUCT_CATEGORIES[key].ids.includes(id)) || 'other';
+    }
+
+    function mu(label, fn) { return { label, toBase: fn }; }
+    const RM = {1:22.31,2:20.09,3:17.87,4:15.65,5:13.43,6:11.21,7:8.99,8:6.77};
+    const RC = {1:25.38,2:23.22,3:21.06,4:18.9,5:16.74,6:14.58,7:12.42,8:10.26};
+
+    const locationRules = {
+        "На станции": {
+            p1:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18)],
+            p2:[mu("шт",q=>q),mu("пакет (50 шт)",q=>q*50),mu("пакет (60 шт)",q=>q*60)],
+            p3:[mu("кг",q=>q),mu("пакет (2 кг)",q=>q*2)],
+            p4:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18)],
+            p5:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18)],
+            p6:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36)],
+            p7:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36)],
+            p8:[mu("шт",q=>q),mu("кг",q=>q/0.019),mu("пакет (100 шт)",q=>q*100)],
+            p9:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q)],
+            p10:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+            p11:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+            p12:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1),
+                 mu("Уровень Ризки (1-8)",l=>{let v=Math.round(l);return(v>=1&&v<=8)?RM[v]:0;})],
+            p13:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1),
+                 mu("Уровень Ризки (1-8)",l=>{let v=Math.round(l);return(v>=1&&v<=8)?RC[v]:0;})],
+            p14:[mu("л",q=>q),mu("упаковка (1 л)",q=>q),mu("коробка (12 л)",q=>q*12)],
+            p15:[mu("шт",q=>q),mu("пачка (32 шт)",q=>q*32),mu("брикет (160 шт)",q=>q*160),mu("коробка (960 шт)",q=>q*960)],
+            p16:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q)],
+            p17:[mu("кг",q=>q),mu("упаковка (11,34 кг)",q=>q*11.34)],
+            p18:[mu("л",q=>q),mu("кега 20 л",q=>q*20),mu("кега 30 л",q=>q*30)],
+            p19:[mu("л",q=>q),mu("кега 20 л",q=>q*20),mu("кега 30 л",q=>q*30)],
+            p20:[mu("шт",q=>q)],p21:[mu("шт",q=>q)],p22:[mu("шт",q=>q)],p23:[mu("шт",q=>q)],
+            p24:[mu("кг",q=>q),mu("упаковка (2 кг)",q=>q*2)],
+            p25:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q)],
+            p26:[mu("кг",q=>q),mu("упаковка (0,25 кг)",q=>q*0.25)],
+            p27:[mu("кг",q=>q),mu("бутылка (6,9 кг)",q=>q*6.9),mu("коробка (13,8 кг)",q=>q*13.8)]
+        },
+"Дефрост": {
+    p1:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (6 пак.)",q=>q*108),mu("коробка (8 пак.)",q=>q*144)],
+    p2:[mu("шт",q=>q),mu("пакет (50 шт)",q=>q*50),mu("пакет (60 шт)",q=>q*60),mu("коробка (6 пак.)",q=>q*300),mu("коробка (8 пак.)",q=>q*400)],
+    p3:[mu("кг",q=>q),mu("пакет (2 кг)",q=>q*2),mu("коробка (6 пак.)",q=>q*12),mu("коробка (8 пак.)",q=>q*16)],
+    p4:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+    p5:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+    p6:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+    p7:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+},
+        "Морозный ларь": {
+            p8:[mu("шт",q=>q),mu("кг",q=>q/0.019),mu("пакет (100 шт)",q=>q*100)],
+            p9:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q)],
+            p10:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+            p11:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5)],
+            p24:[mu("кг",q=>q),mu("упаковка (2 кг)",q=>q*2),mu("коробка (12 кг)",q=>q*12)],
+            p25:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q),mu("коробка (10 кг)",q=>q*10)]
+        },
+        "Морозильная камера": {
+            p1:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (6 пак.)",q=>q*108),mu("коробка (8 пак.)",q=>q*144)],
+            p2:[mu("шт",q=>q),mu("пакет (50 шт)",q=>q*50),mu("пакет (60 шт)",q=>q*60),mu("коробка (6 пак.)",q=>q*300),mu("коробка (8 пак.)",q=>q*400)],
+            p3:[mu("кг",q=>q),mu("пакет (2 кг)",q=>q*2),mu("коробка (6 пак.)",q=>q*12),mu("коробка (8 пак.)",q=>q*16)],
+            p4:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+            p5:[mu("шт",q=>q),mu("пакет (18 шт)",q=>q*18),mu("коробка (8 пак.)",q=>q*144),mu("коробка (10 пак.)",q=>q*180)],
+            p6:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+            p7:[mu("шт",q=>q),mu("пакет (36 шт)",q=>q*36),mu("коробка (8 пак.)",q=>q*288),mu("коробка (10 пак.)",q=>q*360)],
+            p8:[mu("шт",q=>q),mu("пакет (100 шт)",q=>q*100),mu("коробка (7 пак.)",q=>q*700)],
+            p9:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q),mu("коробка (10 пак.)",q=>q*10)],
+            p10:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5),mu("коробка (5 пак.)",q=>q*12.5)],
+            p11:[mu("кг",q=>q),mu("пакет (2,5 кг)",q=>q*2.5),mu("коробка (5 пак.)",q=>q*12.5)],
+            p24:[mu("кг",q=>q),mu("упаковка (2 кг)",q=>q*2),mu("коробка (12 кг)",q=>q*12)],
+            p25:[mu("кг",q=>q),mu("упаковка (1 кг)",q=>q),mu("коробка (10 кг)",q=>q*10)],
+            p26:[mu("кг",q=>q),mu("упаковка (0,25 кг)",q=>q*0.25),mu("коробка (2,5 кг)",q=>q*2.5),mu("коробка (5 кг)",q=>q*5),mu("коробка (2,4 кг)",q=>q*2.4)]
+        },
+        "Холодильная камера": {
+            p12:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1)],
+            p13:[mu("кг",q=>q),mu("пакет (1,1 кг)",q=>q*1.1),mu("коробка (11,1 кг)",q=>q*11.1)],
+            p14:[mu("л",q=>q),mu("упаковка (1 л)",q=>q),mu("коробка (12 л)",q=>q*12)],
+            p15:[mu("шт",q=>q),mu("брикет (160 шт)",q=>q*160),mu("коробка (960 шт)",q=>q*960)],
+            p27:[mu("кг",q=>q),mu("бутылка (6,9 кг)",q=>q*6.9),mu("коробка (13,8 кг)",q=>q*13.8)]
+        },
+        "Сухой склад": {
+            p16:[mu("кг",q=>q),mu("пакет (1 кг)",q=>q),mu("коробка (8 кг)",q=>q*8),mu("коробка (4 кг)",q=>q*4)],
+            p17:[mu("пакет (11,34 кг)",q=>q*11.34)],
+            p27:[mu("кг",q=>q),mu("бутылка (6,9 кг)",q=>q*6.9),mu("коробка (13,8 кг)",q=>q*13.8)]
+        }
+    };
+
+    const locations = ["На станции","Морозный ларь","Дефрост","Морозильная камера","Холодильная камера","Сухой склад"];
+    let currentLocIdx = 0;
+    let currentLoc = locations[0];
+    let currentCategory = 'all';
+    let filterOnlyFilled = true;
+    let searchQ = '';
+
+    /* ════════════════════════════════
+       STORAGE — инвентаризация
+    ════════════════════════════════ */
+    function getRows(loc,pid,uIdx){const r=localStorage.getItem(`inv_${loc}_${pid}_${uIdx}`);return r?JSON.parse(r):[null];}
+    function setRows(loc,pid,uIdx,rows){localStorage.setItem(`inv_${loc}_${pid}_${uIdx}`,JSON.stringify(rows));}
+    function getCU(loc,pid){const r=localStorage.getItem(`cu_${loc}_${pid}`);return r?JSON.parse(r):[];}
+    function setCU(loc,pid,cu){localStorage.setItem(`cu_${loc}_${pid}`,JSON.stringify(cu));}
+    function getCustomProducts(loc){const r=localStorage.getItem(`cprods_${loc}`);return r?JSON.parse(r):[];}
+    function setCustomProducts(loc,arr){localStorage.setItem(`cprods_${loc}`,JSON.stringify(arr));}
+    function genId(){return 'cp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
+
+    /* ════════════════════════════════
+       STORAGE — ДС
+    ════════════════════════════════ */
+    const NOMINALS = [5000,2000,1000,500,200,100,50,10,5,2,1];
+    function localDateInputValue(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    function defaultSafeBags(){return [{id:'sb1',name:'Сейф-пакет 1',amount:'',date:localDateInputValue()}];}
+
+    function getDsData() {
+        const r = localStorage.getItem('ds_data');
+        if (r) {
+            const data=JSON.parse(r);
+            if(!Array.isArray(data.safeBags)||data.safeBags.length===0)data.safeBags=defaultSafeBags();
+            data.safeBags.forEach(bag=>{if(bag.date===undefined)bag.date='';});
+            if(data.cashBook===undefined)data.cashBook='';
+            return data;
+        }
+        return {
+            safe: NOMINALS.reduce((acc,n)=>{ acc[n]=[null]; return acc; },{}),
+            safeBags: defaultSafeBags(),
+            cashBook: '',
+            kassas: [
+                { id:'k1', name:'Касса 1', vsego:'', vyruchka:'' }
+            ],
+            avtos: [
+                { id:'a1', name:'Авто 1', vsego:'', vyruchka:'' }
+            ]
+        };
+    }
+    function saveDsData(data){ localStorage.setItem('ds_data', JSON.stringify(data)); }
+
+    /* ════════════════════════════════
+       UNDO — универсальный откат последних действий
+    ════════════════════════════════ */
+    const UNDO_KEY = '__undo_stack__';
+    const MAX_UNDO = 10;
+
+    function getAppDataKeys(){
+        const keys=[];
+        for(let i=0;i<localStorage.length;i++){
+            const k=localStorage.key(i);
+            if(k && (k.startsWith('inv_')||k.startsWith('cu_')||k.startsWith('cprods_')||k==='ds_data')) keys.push(k);
+        }
+        return keys;
+    }
+    function snapshotAppData(){
+        const snap={};
+        getAppDataKeys().forEach(k=>{snap[k]=localStorage.getItem(k);});
+        return snap;
+    }
+    function pushUndoSnapshot(label){
+        try{
+            const stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]');
+            stack.push({label:label||'', data:snapshotAppData()});
+            while(stack.length>MAX_UNDO) stack.shift();
+            localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
+        }catch(e){ console.error('Не удалось сохранить снимок для отмены', e); }
+        updateUndoButton();
+    }
+    function undoLastAction(){
+        let stack;
+        try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
+        if(!stack.length){ toast('Нечего отменять'); return; }
+        const last=stack.pop();
+        localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
+
+        getAppDataKeys().forEach(k=>localStorage.removeItem(k));
+        Object.keys(last.data).forEach(k=>localStorage.setItem(k,last.data[k]));
+
+        renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
+        document.getElementById('addProductFormWrap').innerHTML='';
+        if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+        if(document.getElementById('tabDs').classList.contains('active')) renderDs();
+
+        updateUndoButton();
+        toast(last.label ? `↩️ Отменено: ${last.label}` : '↩️ Действие отменено');
+    }
+    function updateUndoButton(){
+        let stack;
+        try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
+        const btn=document.getElementById('undoBtn');
+        const badge=document.getElementById('undoBadge');
+        if(!btn)return;
+        btn.disabled = stack.length===0;
+        if(badge){
+            if(stack.length>0){ badge.style.display='flex'; badge.textContent=stack.length; }
+            else badge.style.display='none';
+        }
+    }
+
+    /* ════════════════════════════════
+       CALC — инвентаризация
+    ════════════════════════════════ */
+    function getLocTotal(loc,pid){
+        const cps=getCustomProducts(loc);
+        const cp=cps.find(p=>p.id===pid);
+        if(cp){
+            let t=0;
+            (cp.rows||[null]).forEach(v=>{t+=v==null||v===''?0:parseFloat(v);});
+            (cp.customUnits||[]).forEach(cu=>{(cu.rows||[null]).forEach(v=>{t+=(v==null||v===''?0:parseFloat(v))*cu.coefficient;});});
+            return t;
+        }
+        let t=0;
+        const rules=locationRules[loc]?.[pid];
+        if(rules)rules.forEach((u,i)=>getRows(loc,pid,i).forEach(v=>{t+=u.toBase(v==null||v===''?0:parseFloat(v));}));
+        getCU(loc,pid).forEach(cu=>cu.rows.forEach(v=>{t+=(v==null||v===''?0:parseFloat(v))*cu.coefficient;}));
+        return t;
+    }
+    function getAllTotal(pid){return locations.reduce((s,loc)=>s+getLocTotal(loc,pid),0);}
+    function formatProductResult(baseUnit,val){
+        const rounded=Math.round((val+Number.EPSILON)*100)/100;
+        return baseUnit==='шт'?Math.round(rounded):rounded;
+    }
+    function fmt(baseUnit,val){return formatProductResult(baseUnit,val);}
+    function getStep(label){const l=label.toLowerCase();return l==='кг'||l==='л'?0.1:1;}
+    function rnd(v,s){return Math.round((v+Number.EPSILON)*100)/100;}
+
+    /* ════════════════════════════════
+       CALC — ДС
+    ════════════════════════════════ */
+    function fmtMoney(v){
+        if(v===0||v==='')return '0 ₽';
+        return v.toLocaleString('ru-RU')+ ' ₽';
+    }
+    function parseMoney(v){
+        if(v===''||v===null||v===undefined)return 0;
+        return parseFloat(String(v).replace(/\s/g,'').replace(',','.'))||0;
+    }
+
+    function calcSafeTotal(){
+    return NOMINALS.reduce((s,n)=>s+calcNominalTotal(n),0)+calcSafeBagsTotal();
+}
+    function calcSafeBagsTotal(){
+        const ds=getDsData();
+        return (ds.safeBags||[]).reduce((sum,bag)=>sum+parseMoney(bag.amount),0);
+    }
+    function calcCashItem(item){
+        const vsego=parseMoney(item.vsego);
+        const vyruchka=parseMoney(item.vyruchka);
+        return vsego - vyruchka;
+    }
+    function calcKassasTotal(){
+        const ds=getDsData();
+        return ds.kassas.reduce((s,k)=>s+calcCashItem(k),0);
+    }
+    function calcAvtosTotal(){
+        const ds=getDsData();
+        return ds.avtos.reduce((s,a)=>s+calcCashItem(a),0);
+    }
+    function calcGrandTotal(){
+        return calcSafeTotal()+calcKassasTotal()+calcAvtosTotal();
+    }
+
+    /* ════════════════════════════════
+       TOAST
+    ════════════════════════════════ */
+    function toast(msg){
+        const t=document.getElementById('toast');
+        t.textContent=msg; t.classList.add('show');
+        setTimeout(()=>t.classList.remove('show'),2200);
+    }
+
+    /* ════════════════════════════════
+       ПОДТВЕРЖДЕНИЕ (замена нативного confirm)
+    ════════════════════════════════ */
+    let _confirmCallback=null;
+    function showConfirm(msg,onOk){
+        document.getElementById('confirmMsg').textContent=msg;
+        document.getElementById('confirmOverlay').classList.add('show');
+        _confirmCallback=onOk;
+    }
+    function hideConfirm(){
+        document.getElementById('confirmOverlay').classList.remove('show');
+        _confirmCallback=null;
+    }
+
+    /* ════════════════════════════════
+       NAV BADGE
+    ════════════════════════════════ */
+    function updateNavBadge(){
+        const stdF=stdProducts.filter(p=>locations.some(loc=>getLocTotal(loc,p.id)>0)).length;
+        const cpF=locations.reduce((s,loc)=>s+getCustomProducts(loc).filter(cp=>getLocTotal(loc,cp.id)>0).length,0);
+        const total=stdF+cpF;
+        const badge=document.getElementById('navBadge');
+        badge.style.display=total>0?'flex':'none';
+        badge.textContent=total;
+    }
+
+    /* ════════════════════════════════
+       LOCATION STRIP
+    ════════════════════════════════ */
+    function renderLocStrip(){
+        const c=document.getElementById('locStrip');
+        c.innerHTML='';
+        locations.forEach((loc,i)=>{
+            const chip=document.createElement('div');
+            chip.className='loc-chip'+(i===currentLocIdx?' active':'');
+            chip.id=`locchip_${i}`;
+            const sH=Object.keys(locationRules[loc]||{}).some(pid=>getLocTotal(loc,pid)>0);
+            const cH=getCustomProducts(loc).some(cp=>getLocTotal(loc,cp.id)>0);
+            if(sH||cH)chip.classList.add('has-data');
+            chip.innerHTML=`<span class="loc-dot"></span>${loc}`;
+            chip.onclick=()=>switchLocation(i);
+            c.appendChild(chip);
+        });
+    }
+    function updateLocChipData(locIdx){
+        const chip=document.getElementById(`locchip_${locIdx}`);
+        if(!chip)return;
+        const loc=locations[locIdx];
+        const sH=Object.keys(locationRules[loc]||{}).some(pid=>getLocTotal(loc,pid)>0);
+        const cH=getCustomProducts(loc).some(cp=>getLocTotal(loc,cp.id)>0);
+        chip.classList.toggle('has-data',sH||cH);
+    }
+
+    /* ════════════════════════════════
+       STATS
+    ════════════════════════════════ */
+    function renderStats(){
+        const stdPids=Object.keys(locationRules[currentLoc]||{});
+        const cpList=getCustomProducts(currentLoc);
+        const total=stdPids.length+cpList.length;
+        const filled=stdPids.filter(pid=>getLocTotal(currentLoc,pid)>0).length
+                    +cpList.filter(cp=>getLocTotal(currentLoc,cp.id)>0).length;
+        const pct=total>0?Math.round(filled/total*100):0;
+        document.getElementById('stTotal').textContent=total;
+        document.getElementById('stFilled').textContent=filled;
+        document.getElementById('stPct').textContent=pct+'%';
+    }
+
+    /* ════════════════════════════════
+       SWITCH LOCATION
+    ════════════════════════════════ */
+    function switchLocation(idx){
+        currentLocIdx=idx; currentLoc=locations[idx];
+        renderLocStrip();
+        const active=document.getElementById(`locchip_${idx}`);
+        if(active)active.scrollIntoView({block:'nearest',inline:'center'});
+        renderStats(); renderCategoryStrip(); renderProducts();
+        document.getElementById('addProductFormWrap').innerHTML='';
+    }
+
+    /* ════════════════════════════════
+       RENDER PRODUCTS
+    ════════════════════════════════ */
+    function renderProducts(){
+        const container=document.getElementById('productsList');
+        container.innerHTML='';
+        const rules=locationRules[currentLoc]||{};
+        const stdPids=new Set(Object.keys(rules));
+        stdProducts.forEach(p=>{if(getCU(currentLoc,p.id).length>0)stdPids.add(p.id);});
+        stdPids.forEach(pid=>{
+            const product=stdProducts.find(p=>p.id===pid);
+            if(!product || (currentCategory!=='all' && productCategory(pid)!==currentCategory))return;
+            container.appendChild(buildStdProductCard(product,rules[pid]||[]));
+        });
+        if(currentCategory==='all')getCustomProducts(currentLoc).forEach(cp=>{container.appendChild(buildCustomProductCard(cp));});
+    }
+
+    function renderCategoryStrip(){
+        const strip=document.getElementById('categoryStrip');
+        const available=Object.keys(locationRules[currentLoc]||{});
+        const visible=Object.keys(PRODUCT_CATEGORIES).filter(key=>available.some(id=>productCategory(id)===key));
+        if(currentCategory!=='all' && !visible.includes(currentCategory))currentCategory='all';
+        strip.innerHTML='';
+        [{key:'all',label:'Все'},...visible.map(key=>({key,label:PRODUCT_CATEGORIES[key].label}))].forEach(category=>{
+            const chip=document.createElement('button');
+            chip.type='button'; chip.className='category-chip'+(category.key===currentCategory?' active':'');
+            chip.textContent=category.label;
+            chip.onclick=()=>{currentCategory=category.key;renderCategoryStrip();renderProducts();};
+            strip.appendChild(chip);
+        });
+    }
+
+    /* ════════════════════════════════
+       СТАНДАРТНАЯ КАРТОЧКА
+    ════════════════════════════════ */
+    function buildStdProductCard(product,unitRules){
+        const pid=product.id;
+        const totalVal=fmt(product.baseUnit,getLocTotal(currentLoc,pid));
+        const hasData=totalVal>0;
+        const card=document.createElement('div');
+        card.className='product-card '+productCategory(pid)+(hasData?' has-data':'');
+        card.id=`pcard_${pid}`;
+        const header=document.createElement('div');
+        header.className='product-header';
+        header.innerHTML=`
+            <div class="product-indicator"></div>
+            <div class="product-name">${product.name}</div>
+            <div class="product-meta">
+                <div class="product-total ${hasData?'':'zero'}" id="ptotal_${pid}">${totalVal}</div>
+                <div class="product-unit-tag">${product.baseUnit}</div>
+            </div>
+            <div class="product-chevron">⌄</div>`;
+        header.onclick=()=>card.classList.toggle('open');
+        card.appendChild(header);
+        const body=document.createElement('div');
+        body.className='product-body';
+        unitRules.forEach((unit,uIdx)=>{body.appendChild(buildUnitBlock(currentLoc,pid,uIdx,unit.label,false,null,product.baseUnit));});
+        getCU(currentLoc,pid).forEach((cu,cuIdx)=>{body.appendChild(buildUnitBlock(currentLoc,pid,cuIdx,cu.label,true,cu.coefficient,product.baseUnit));});
+        const footer=document.createElement('div');
+        footer.className='product-footer';
+        const addBtn=document.createElement('button');
+        addBtn.className='add-custom-btn';
+        addBtn.textContent='➕ Своя единица';
+        addBtn.onclick=()=>toggleCustomUnitForm(body,currentLoc,pid,false);
+        const clrBtn=document.createElement('button');
+        clrBtn.className='clear-product-btn';
+        clrBtn.textContent='🗑 Очистить';
+        clrBtn.onclick=()=>{
+            showConfirm(`Очистить "${product.name}"?`,()=>{
+                pushUndoSnapshot(`Очистка «${product.name}»`);
+                unitRules.forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
+                setCU(currentLoc,pid,[]);
+                refreshStdCard(pid,product,unitRules);
+            });
+        };
+        footer.appendChild(addBtn); footer.appendChild(clrBtn);
+        body.appendChild(footer); card.appendChild(body);
+        return card;
+    }
+
+    /* ════════════════════════════════
+       КАСТОМНАЯ КАРТОЧКА ПРОДУКТА
+    ════════════════════════════════ */
+    function buildCustomProductCard(cp){
+        const pid=cp.id;
+        const totalVal=fmt(cp.baseUnit,getLocTotal(currentLoc,pid));
+        const hasData=totalVal>0;
+        const card=document.createElement('div');
+        card.className='product-card custom-product'+(hasData?' has-data':'');
+        card.id=`pcard_${pid}`;
+        const header=document.createElement('div');
+        header.className='product-header';
+        header.innerHTML=`
+            <div class="product-indicator"></div>
+            <div class="product-name">${cp.name}</div>
+            <div class="product-meta">
+                <div class="product-total ${hasData?'':'zero'}" id="ptotal_${pid}">${totalVal}</div>
+                <div class="product-unit-tag">${cp.baseUnit}</div>
+                <div class="custom-tag">свой</div>
+            </div>
+            <div class="product-chevron">⌄</div>`;
+        header.onclick=()=>card.classList.toggle('open');
+        card.appendChild(header);
+        const body=document.createElement('div');
+        body.className='product-body';
+        body.appendChild(buildCustomProductUnitBlock(cp));
+        (cp.customUnits||[]).forEach((_,cuIdx)=>{body.appendChild(buildCPCustomUnitBlock(cp,cuIdx));});
+        const footer=document.createElement('div');
+        footer.className='product-footer';
+        const addUnitBtn=document.createElement('button');
+        addUnitBtn.className='add-custom-btn';
+        addUnitBtn.textContent='➕ Своя единица';
+        addUnitBtn.onclick=()=>toggleCustomUnitForm(body,currentLoc,pid,true);
+        const clrBtn=document.createElement('button');
+        clrBtn.className='clear-product-btn';
+        clrBtn.textContent='🗑 Очистить';
+        clrBtn.onclick=()=>{
+            showConfirm(`Очистить "${cp.name}"?`,()=>{
+                pushUndoSnapshot(`Очистка «${cp.name}»`);
+                let cps=getCustomProducts(currentLoc);
+                const idx=cps.findIndex(p=>p.id===pid);
+                if(idx!==-1){cps[idx].rows=[null];cps[idx].customUnits=[];setCustomProducts(currentLoc,cps);}
+                refreshCustomCard(pid);
+            });
+        };
+        const delBtn=document.createElement('button');
+        delBtn.className='delete-product-btn';
+        delBtn.textContent='✖ Удалить продукт';
+        delBtn.onclick=()=>{
+            showConfirm(`Удалить продукт "${cp.name}"?`,()=>{
+                pushUndoSnapshot(`Удаление «${cp.name}»`);
+                let cps=getCustomProducts(currentLoc);
+                setCustomProducts(currentLoc,cps.filter(p=>p.id!==pid));
+                renderProducts(); renderStats(); updateLocChipData(currentLocIdx); updateNavBadge();
+                toast(`🗑 "${cp.name}" удалён`);
+            });
+        };
+        footer.appendChild(addUnitBtn); footer.appendChild(clrBtn); footer.appendChild(delBtn);
+        body.appendChild(footer); card.appendChild(body);
+        return card;
+    }
+
+    function buildCustomProductUnitBlock(cp){
+        const pid=cp.id; const s=getStep(cp.baseUnit);
+        const block=document.createElement('div');
+        block.className='unit-block';
+        const bHeader=document.createElement('div');
+        bHeader.className='unit-block-header';
+        bHeader.innerHTML=`<div class="unit-name">${cp.baseUnit}</div><div class="unit-subtotal" id="cpust_${pid}_base"></div>`;
+        block.appendChild(bHeader);
+        const rowsWrap=document.createElement('div');
+        rowsWrap.className='unit-rows';
+        block.appendChild(rowsWrap);
+        function refreshRows(){
+            const cps=getCustomProducts(currentLoc);
+            const cur=cps.find(p=>p.id===pid);
+            if(!cur)return;
+            const data=cur.rows||[null];
+            rowsWrap.innerHTML='';
+            let sub=0;
+            data.forEach((val,i)=>{
+                const v=val==null||val===''?0:parseFloat(val); sub+=v;
+                const row=makeRowDOM(val,s,(nv)=>{
+                    let c=getCustomProducts(currentLoc);
+                    const ci=c.findIndex(p=>p.id===pid);
+                    if(ci!==-1){c[ci].rows[i]=nv;setCustomProducts(currentLoc,c);}
+                    updateCPSubtotal(pid,'base',cp.baseUnit); updateCPCardTotal(pid,cp.baseUnit); updateNavBadge();
+                    if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+                },()=>{
+                    let c=getCustomProducts(currentLoc);
+                    const ci=c.findIndex(p=>p.id===pid);
+                    if(ci!==-1){c[ci].rows.push(null);setCustomProducts(currentLoc,c);}
+                    refreshRows();
+                },()=>{
+                    let c=getCustomProducts(currentLoc);
+                    const ci=c.findIndex(p=>p.id===pid);
+                    if(ci!==-1){if(c[ci].rows.length===1)c[ci].rows=[null];else c[ci].rows.splice(i,1);setCustomProducts(currentLoc,c);}
+                    refreshRows(); updateCPSubtotal(pid,'base',cp.baseUnit); updateCPCardTotal(pid,cp.baseUnit); updateNavBadge();
+                },i);
+                rowsWrap.appendChild(row);
+            });
+            const el=document.getElementById(`cpust_${pid}_base`);
+            if(el)el.textContent=sub>0?`= ${formatProductResult(cp.baseUnit,sub)}`:'';
+        }
+        refreshRows();
+        return block;
+    }
+
+    function buildCPCustomUnitBlock(cp,cuIdx){
+        const pid=cp.id;
+        const block=document.createElement('div');
+        block.className='unit-block';
+        const bHeader=document.createElement('div');
+        bHeader.className='unit-block-header';
+        const nameEl=document.createElement('div');
+        nameEl.className='unit-name';
+        nameEl.textContent=`${cp.customUnits[cuIdx].label} ×${cp.customUnits[cuIdx].coefficient}`;
+        const delBtn=document.createElement('button');
+        delBtn.style.cssText='background:var(--red-light);border:none;color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
+        delBtn.textContent='✖';
+        delBtn.onclick=()=>{
+            let cps=getCustomProducts(currentLoc);
+            const ci=cps.findIndex(p=>p.id===pid);
+            if(ci!==-1){cps[ci].customUnits.splice(cuIdx,1);setCustomProducts(currentLoc,cps);}
+            refreshCustomCard(pid);
+        };
+        bHeader.appendChild(nameEl); bHeader.appendChild(delBtn); block.appendChild(bHeader);
+        const rowsWrap=document.createElement('div');
+        rowsWrap.className='unit-rows';
+        block.appendChild(rowsWrap);
+        function refreshRows(){
+            const cps=getCustomProducts(currentLoc);
+            const cur=cps.find(p=>p.id===pid);
+            if(!cur||!cur.customUnits[cuIdx])return;
+            const coef=cur.customUnits[cuIdx].coefficient;
+            const data=cur.customUnits[cuIdx].rows||[null];
+            rowsWrap.innerHTML='';
+            data.forEach((val,i)=>{
+                const row=makeRowDOM(val,1,(nv)=>{
+                    let c=getCustomProducts(currentLoc);
+                    const ci=c.findIndex(p=>p.id===pid);
+                    if(ci!==-1){c[ci].customUnits[cuIdx].rows[i]=nv;setCustomProducts(currentLoc,c);}
+                    updateCPCardTotal(pid,cur.baseUnit); updateNavBadge();
+                    if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+                },()=>{
+                    let c=getCustomProducts(currentLoc);
+                    const ci=c.findIndex(p=>p.id===pid);
+                    if(ci!==-1){c[ci].customUnits[cuIdx].rows.push(null);setCustomProducts(currentLoc,c);}
+                    refreshRows();
+                },()=>{
+                    let c=getCustomProducts(currentLoc);
+                    const ci=c.findIndex(p=>p.id===pid);
+                    if(ci!==-1){
+                        if(c[ci].customUnits[cuIdx].rows.length===1)c[ci].customUnits[cuIdx].rows=[null];
+                        else c[ci].customUnits[cuIdx].rows.splice(i,1);
+                        setCustomProducts(currentLoc,c);
+                    }
+                    refreshRows(); updateCPCardTotal(pid,cur.baseUnit); updateNavBadge();
+                },i);
+                rowsWrap.appendChild(row);
+            });
+        }
+        refreshRows();
+        return block;
+    }
+
+    /* ════════════════════════════════
+       СТАНДАРТНЫЙ UNIT BLOCK
+    ════════════════════════════════ */
+    function buildUnitBlock(loc,pid,idx,label,isCustom,coef,baseUnit){
+        const s=getStep(label);
+        const block=document.createElement('div');
+        block.className='unit-block';
+        const bHeader=document.createElement('div');
+        bHeader.className='unit-block-header';
+        const nameEl=document.createElement('div');
+        nameEl.className='unit-name';
+        nameEl.textContent=isCustom?`${label} ×${coef}`:label;
+        const subEl=document.createElement('div');
+        subEl.className='unit-subtotal';
+        subEl.id=`ust_${loc}_${pid}_${idx}_${isCustom?'c':'s'}`;
+        if(isCustom){
+            const delBtn=document.createElement('button');
+            delBtn.style.cssText='background:var(--red-light);border:none;color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;';
+            delBtn.textContent='✖';
+            delBtn.onclick=()=>{
+                let cu=getCU(loc,pid);cu.splice(idx,1);setCU(loc,pid,cu);
+                refreshStdCard(pid,stdProducts.find(p=>p.id===pid),locationRules[loc]?.[pid]||[]);
+            };
+            bHeader.appendChild(nameEl); bHeader.appendChild(delBtn);
+        } else { bHeader.appendChild(nameEl); bHeader.appendChild(subEl); }
+        block.appendChild(bHeader);
+        const rowsWrap=document.createElement('div');
+        rowsWrap.className='unit-rows';
+        block.appendChild(rowsWrap);
+        function refreshRows(){
+            const data=isCustom?(getCU(loc,pid)[idx]?.rows||[null]):getRows(loc,pid,idx);
+            rowsWrap.innerHTML='';
+            let sub=0;
+            data.forEach((val,i)=>{
+                const v=val==null||val===''?0:parseFloat(val);
+                sub+=isCustom?v*coef:(locationRules[loc]?.[pid]?.[idx]?.toBase(v)||0);
+                const row=makeRowDOM(val,s,(nv)=>{
+                    if(isCustom){let cu=getCU(loc,pid);if(cu[idx]){cu[idx].rows[i]=nv;setCU(loc,pid,cu);}}
+                    else{let r=getRows(loc,pid,idx);r[i]=nv;setRows(loc,pid,idx,r);}
+                    updateSubtotal(loc,pid,idx,isCustom,coef);
+                    updateCardTotal(pid,baseUnit); updateNavBadge();
+                    if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+                },()=>{
+                    if(isCustom){let cu=getCU(loc,pid);if(cu[idx]){cu[idx].rows.push(null);setCU(loc,pid,cu);}}
+                    else{let r=getRows(loc,pid,idx);r.push(null);setRows(loc,pid,idx,r);}
+                    refreshRows();
+                },()=>{
+                    if(isCustom){let cu=getCU(loc,pid);if(cu[idx]){if(cu[idx].rows.length===1)cu[idx].rows=[null];else cu[idx].rows.splice(i,1);setCU(loc,pid,cu);}}
+                    else{let r=getRows(loc,pid,idx);if(r.length===1)r=[null];else r.splice(i,1);setRows(loc,pid,idx,r);}
+                    refreshRows(); updateSubtotal(loc,pid,idx,isCustom,coef);
+                    updateCardTotal(pid,baseUnit); updateNavBadge();
+                },i);
+                rowsWrap.appendChild(row);
+            });
+            const stEl=document.getElementById(`ust_${loc}_${pid}_${idx}_${isCustom?'c':'s'}`);
+            if(stEl)stEl.textContent=sub>0?`= ${formatProductResult(baseUnit,sub)}`:'';
+        }
+        refreshRows();
+        return block;
+    }
+
+    /* ════════════════════════════════
+       ФАБРИКА СТРОКИ ВВОДА
+    ════════════════════════════════ */
+    function makeRowDOM(val,s,onSave,onAdd,onRemove,rowIdx){
+        const row=document.createElement('div');
+        row.className='row-item';
+        const num=document.createElement('span');
+        num.className='row-num';
+        num.textContent=rowIdx+1;
+        const vc=document.createElement('div');
+        vc.className='vc';
+        const dec=document.createElement('button');
+        dec.className='vc-btn'; dec.textContent='−';
+        const inp=document.createElement('input');
+        inp.className='vc-input'; inp.type='number'; inp.inputMode='decimal';
+        inp.step=s; inp.min=0; inp.placeholder='0';
+        inp.value=val==null||val===''?'':val;
+        const inc=document.createElement('button');
+        inc.className='vc-btn'; inc.textContent='+';
+        vc.appendChild(dec); vc.appendChild(inp); vc.appendChild(inc);
+        const acts=document.createElement('div');
+        acts.className='row-actions';
+        const addRow=document.createElement('button');
+        addRow.className='row-action-btn'; addRow.textContent='+';
+        const delRow=document.createElement('button');
+        delRow.className='row-action-btn del'; delRow.textContent='−';
+        acts.appendChild(addRow); acts.appendChild(delRow);
+        row.appendChild(num); row.appendChild(vc); row.appendChild(acts);
+        const save=()=>{
+            let nv=inp.value===''?null:rnd(Math.max(0,parseFloat(inp.value)||0),s);
+            if(nv!==null)inp.value=nv;
+            onSave(nv);
+        };
+        inp.addEventListener('change',save);
+        inp.addEventListener('blur',save);
+        dec.addEventListener('click',()=>{let v=inp.value===''?0:parseFloat(inp.value)||0;inp.value=rnd(Math.max(0,v-s),s);save();});
+        inc.addEventListener('click',()=>{let v=inp.value===''?0:parseFloat(inp.value)||0;inp.value=rnd(v+s,s);save();});
+        addRow.addEventListener('click',onAdd);
+        delRow.addEventListener('click',onRemove);
+        return row;
+    }
+
+    /* ════════════════════════════════
+       ОБНОВЛЕНИЕ БЕЗ ПЕРЕРИСОВКИ
+    ════════════════════════════════ */
+    function updateSubtotal(loc,pid,idx,isCustom,coef){
+        const data=isCustom?(getCU(loc,pid)[idx]?.rows||[null]):getRows(loc,pid,idx);
+        let t=0;
+        data.forEach(v=>{const n=v==null||v===''?0:parseFloat(v);t+=isCustom?n*coef:(locationRules[loc]?.[pid]?.[idx]?.toBase(n)||0);});
+        const el=document.getElementById(`ust_${loc}_${pid}_${idx}_${isCustom?'c':'s'}`);
+        const product=stdProducts.find(p=>p.id===pid);
+        if(el)el.textContent=t>0?`= ${formatProductResult(product?.baseUnit||'шт',t)}`:'';
+    }
+    function updateCardTotal(pid,baseUnit){
+        const el=document.getElementById(`ptotal_${pid}`);
+        const card=document.getElementById(`pcard_${pid}`);
+        if(!el||!card)return;
+        const val=fmt(baseUnit,getLocTotal(currentLoc,pid));
+        el.textContent=val;
+        el.className='product-total'+(val>0?'':' zero');
+        card.classList.toggle('has-data',val>0);
+        updateLocChipData(currentLocIdx); renderStats();
+    }
+    function updateCPSubtotal(pid,key,baseUnit){
+        const cps=getCustomProducts(currentLoc);
+        const cp=cps.find(p=>p.id===pid);
+        if(!cp)return;
+        const data=cp.rows||[null];
+        const s=getStep(baseUnit);
+        let t=0;
+        data.forEach(v=>{t+=v==null||v===''?0:parseFloat(v);});
+        const el=document.getElementById(`cpust_${pid}_${key}`);
+        if(el)el.textContent=t>0?`= ${formatProductResult(baseUnit,t)}`:'';
+    }
+    function updateCPCardTotal(pid,baseUnit){
+        const el=document.getElementById(`ptotal_${pid}`);
+        const card=document.getElementById(`pcard_${pid}`);
+        if(!el||!card)return;
+        const val=fmt(baseUnit,getLocTotal(currentLoc,pid));
+        el.textContent=val;
+        el.className='product-total'+(val>0?'':' zero');
+        card.classList.toggle('has-data',val>0);
+        updateLocChipData(currentLocIdx); renderStats();
+    }
+    function refreshStdCard(pid,product,unitRules){
+        const card=document.getElementById(`pcard_${pid}`);
+        if(!card)return;
+        const wasOpen=card.classList.contains('open');
+        const newCard=buildStdProductCard(product,unitRules);
+        if(wasOpen)newCard.classList.add('open');
+        card.replaceWith(newCard);
+        updateLocChipData(currentLocIdx); renderStats(); updateNavBadge();
+        if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+    }
+    function refreshCustomCard(pid){
+        const card=document.getElementById(`pcard_${pid}`);
+        if(!card)return;
+        const cps=getCustomProducts(currentLoc);
+        const cp=cps.find(p=>p.id===pid);
+        if(!cp)return;
+        const wasOpen=card.classList.contains('open');
+        const newCard=buildCustomProductCard(cp);
+        if(wasOpen)newCard.classList.add('open');
+        card.replaceWith(newCard);
+        updateLocChipData(currentLocIdx); renderStats(); updateNavBadge();
+        if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+    }
+
+    /* ════════════════════════════════
+       CUSTOM UNIT FORM
+    ════════════════════════════════ */
+    function toggleCustomUnitForm(body,loc,pid,isForCustomProduct){
+        const existing=body.querySelector('.custom-form');
+        if(existing){existing.remove();return;}
+        const form=document.createElement('div');
+        form.className='custom-form';
+        form.innerHTML=`
+            <div class="custom-form-title">➕ Новая единица</div>
+            <input type="text" placeholder="Название (напр. коробка 10 кг)" id="cfLabel">
+            <input type="number" step="any" inputmode="decimal" placeholder="Сколько базовых единиц" id="cfCoef">
+            <div class="custom-form-btns">
+                <button class="cf-save" id="cfSave">💾 Сохранить</button>
+                <button class="cf-cancel" id="cfCancel">Отмена</button>
+            </div>`;
+        const footer=body.querySelector('.product-footer');
+        body.insertBefore(form,footer);
+        form.querySelector('#cfSave').onclick=()=>{
+            const label=form.querySelector('#cfLabel').value.trim();
+            const coef=parseFloat(form.querySelector('#cfCoef').value);
+            if(!label||isNaN(coef)||coef<=0){toast('⚠️ Введите корректные данные');return;}
+            if(isForCustomProduct){
+                let cps=getCustomProducts(loc);
+                const ci=cps.findIndex(p=>p.id===pid);
+                if(ci!==-1){if(!cps[ci].customUnits)cps[ci].customUnits=[];cps[ci].customUnits.push({label,coefficient:coef,rows:[null]});setCustomProducts(loc,cps);refreshCustomCard(pid);}
+            } else {
+                let cu=getCU(loc,pid);cu.push({label,coefficient:coef,rows:[null]});setCU(loc,pid,cu);
+                const product=stdProducts.find(p=>p.id===pid);
+                refreshStdCard(pid,product,locationRules[loc]?.[pid]||[]);
+            }
+        };
+        form.querySelector('#cfCancel').onclick=()=>form.remove();
+        form.querySelector('#cfLabel').focus();
+    }
+
+    /* ════════════════════════════════
+       ADD PRODUCT FORM
+    ════════════════════════════════ */
+    function showAddProductForm(){
+        const wrap=document.getElementById('addProductFormWrap');
+        if(wrap.querySelector('.add-product-form')){wrap.innerHTML='';return;}
+        const form=document.createElement('div');
+        form.className='add-product-form';
+        form.innerHTML=`
+            <div class="add-product-form-title">🆕 Новый продукт для «${currentLoc}»</div>
+            <input type="text" placeholder="Название продукта" id="apfName">
+            <select id="apfUnit">
+                <option value="шт">шт — штуки</option>
+                <option value="кг">кг — килограммы</option>
+                <option value="л">л — литры</option>
+                <option value="г">г — граммы</option>
+                <option value="мл">мл — миллилитры</option>
+                <option value="уп">уп — упаковки</option>
+            </select>
+            <div class="add-product-form-btns">
+                <button class="apf-save" id="apfSave">✅ Добавить</button>
+                <button class="apf-cancel" id="apfCancel">Отмена</button>
+            </div>`;
+        wrap.innerHTML=''; wrap.appendChild(form);
+        form.querySelector('#apfSave').onclick=()=>{
+            const name=form.querySelector('#apfName').value.trim();
+            const baseUnit=form.querySelector('#apfUnit').value;
+            if(!name){toast('⚠️ Введите название продукта');return;}
+            const newProduct={id:genId(),name,baseUnit,rows:[null],customUnits:[]};
+            let cps=getCustomProducts(currentLoc);
+            cps.push(newProduct);
+            setCustomProducts(currentLoc,cps);
+            wrap.innerHTML='';
+            renderProducts(); renderStats(); updateLocChipData(currentLocIdx); updateNavBadge();
+            toast(`✅ Продукт «${name}» добавлен`);
+            setTimeout(()=>{
+                const newCard=document.getElementById(`pcard_${newProduct.id}`);
+                if(newCard){newCard.classList.add('open');newCard.scrollIntoView({behavior:'smooth',block:'center'});}
+            },100);
+        };
+        form.querySelector('#apfCancel').onclick=()=>{wrap.innerHTML='';};
+        form.querySelector('#apfName').focus();
+    }
+
+    /* ════════════════════════════════
+       SUMMARY
+    ════════════════════════════════ */
+    function renderSummary(){
+        const allRows=[];
+        stdProducts.forEach(p=>{
+            const total=locations.reduce((s,loc)=>s+getLocTotal(loc,p.id),0);
+            const display=fmt(p.baseUnit,total);
+            const detail=locations.filter(loc=>locationRules[loc]?.[p.id])
+                .map(loc=>{const v=fmt(p.baseUnit,getLocTotal(loc,p.id));return v>0?`${loc}: ${v}`:null;})
+                .filter(Boolean).join('\n');
+            allRows.push({pid:p.id,name:p.name,unit:p.baseUnit,total:display,detail,isCustom:false});
+        });
+        const seenCp=new Set();
+        locations.forEach(loc=>{
+            getCustomProducts(loc).forEach(cp=>{
+                if(seenCp.has(cp.id))return;
+                seenCp.add(cp.id);
+                const total=getLocTotal(loc,cp.id);
+                const display=fmt(cp.baseUnit,total);
+                allRows.push({pid:cp.id,name:cp.name,unit:cp.baseUnit,total:display,detail:loc,isCustom:true});
+            });
+        });
+        const filled=allRows.filter(r=>r.total>0).length;
+        document.getElementById('summaryStats').innerHTML=`
+            <div class="ss-card"><div class="ss-val">${allRows.length}</div><div class="ss-lbl">Всего позиций</div></div>
+            <div class="ss-card"><div class="ss-val green">${filled}</div><div class="ss-lbl">Заполнено</div></div>
+            <div class="ss-card"><div class="ss-val blue">${allRows.length?Math.round(filled/allRows.length*100):0}%</div><div class="ss-lbl">Готовность</div></div>
+            <div class="ss-card"><div class="ss-val">${allRows.length-filled}</div><div class="ss-lbl">Пустых</div></div>`;
+        let rows=allRows;
+        if(searchQ)rows=rows.filter(r=>r.name.toLowerCase().includes(searchQ.toLowerCase()));
+        if(filterOnlyFilled)rows=rows.filter(r=>r.total>0);
+        const list=document.getElementById('summaryList');
+        list.innerHTML='';
+        if(rows.length===0){list.innerHTML=`<div class="empty-state"><div class="ei">🔍</div><p>Ничего не найдено</p></div>`;return;}
+        rows.forEach(r=>{
+            const item=document.createElement('div');
+            item.className='sum-item'+(r.total===0?' zero':'')+(r.isCustom?' custom':'');
+            item.innerHTML=`
+                <div class="sum-item-left">
+                    <div class="sum-item-name">${r.name}${r.isCustom?' <span style="font-size:10px;color:var(--orange);background:var(--orange-light);padding:1px 6px;border-radius:10px;font-weight:700;">свой</span>':''}</div>
+                    ${r.detail?`<div class="sum-item-detail">${r.detail.replace(/\n/g,'<br>')}</div>`:''}
+                </div>
+                <div class="sum-item-right">
+                    <div class="sum-item-val ${r.total===0?'zero':''}">${r.total}</div>
+                    <div class="sum-item-unit">${r.unit}</div>
+                </div>`;
+            list.appendChild(item);
+        });
+    }
+
+    /* ════════════════════════════════
+       DS — СЕЙФ
+    ════════════════════════════════ */
+    function renderSafe(){
+    const body=document.getElementById('safeBody');
+    body.innerHTML='';
+    const ds=getDsData();
+    NOMINALS.forEach(n=>{
+        const rows=ds.safe[n]||[null];
+        const nomTotal=calcNominalTotal(n);
+        const nomCount=calcNominalCount(n);
+        const nomRow=document.createElement('div');
+        nomRow.className='nominal-row';
+        nomRow.id=`nomrow_${n}`;
+        const nomHeader=document.createElement('div');
+        nomHeader.className='nominal-header';
+        nomHeader.innerHTML=`
+            <div class="nominal-label">
+                <span class="nominal-badge">${n} ₽</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div class="nominal-count" id="nomcount_${n}">${nomCount} шт</div>
+                <div class="nominal-sum ${nomTotal===0?'zero':''}" id="nomsum_${n}">${fmtMoney(nomTotal)}</div>
+            </div>`;
+        nomRow.appendChild(nomHeader);
+
+        const rowsWrap=document.createElement('div');
+        rowsWrap.className='nominal-rows-wrap';
+        const inputRows=document.createElement('div');
+        inputRows.className='nominal-input-rows';
+        inputRows.id=`nominputrows_${n}`;
+        rowsWrap.appendChild(inputRows);
+
+        // ── БЛОК СТАКАНОВ для 10₽ и 1₽ ──
+        if(n===10||n===1){
+            const cupBlock=document.createElement('div');
+            cupBlock.style.cssText=`
+                margin-top:8px; background:var(--purple-light);
+                border:1.5px solid #ddd6fe; border-radius:12px;
+                padding:10px 12px; display:flex; flex-direction:column; gap:8px;
+            `;
+            cupBlock.innerHTML=`
+                <div style="font-size:12px;font-weight:700;color:var(--purple);display:flex;align-items:center;gap:6px;">
+                    🥤 Стаканы (${n} ₽)
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="flex:1;">
+                        <div style="font-size:11px;color:var(--gray-500);font-weight:600;margin-bottom:4px;">В стакане (шт)</div>
+                        <input
+                            type="number" inputmode="numeric" min="0" placeholder="0"
+                            id="cup_per_${n}"
+                            style="width:100%;background:#fff;border:1.5px solid #ddd6fe;
+                                   border-radius:10px;padding:10px 12px;font-size:17px;
+                                   font-weight:700;color:var(--gray-800);text-align:center;"
+                        >
+                    </div>
+                    <div style="font-size:22px;color:var(--gray-400);padding-top:18px;">×</div>
+                    <div style="flex:1;">
+                        <div style="font-size:11px;color:var(--gray-500);font-weight:600;margin-bottom:4px;">Стаканов (шт)</div>
+                        <input
+                            type="number" inputmode="numeric" min="0" placeholder="0"
+                            id="cup_count_${n}"
+                            style="width:100%;background:#fff;border:1.5px solid #ddd6fe;
+                                   border-radius:10px;padding:10px 12px;font-size:17px;
+                                   font-weight:700;color:var(--gray-800);text-align:center;"
+                        >
+                    </div>
+                    <div style="font-size:22px;color:var(--gray-400);padding-top:18px;">=</div>
+                    <div style="flex:1;">
+                        <div style="font-size:11px;color:var(--gray-500);font-weight:600;margin-bottom:4px;">Итого</div>
+                        <div
+                            id="cup_result_${n}"
+                            style="width:100%;background:var(--purple-light);border:1.5px solid #ddd6fe;
+                                   border-radius:10px;padding:10px 12px;font-size:17px;
+                                   font-weight:700;color:var(--purple);text-align:center;min-height:44px;
+                                   display:flex;align-items:center;justify-content:center;"
+                        >0 ₽</div>
+                    </div>
+                </div>`;
+            rowsWrap.appendChild(cupBlock);
+
+            // Восстанавливаем сохранённые значения
+            const ds2=getDsData();
+            const cups=ds2.safe[`cups_${n}`]||{per:'',count:''};
+            setTimeout(()=>{
+                const perEl=document.getElementById(`cup_per_${n}`);
+                const cntEl=document.getElementById(`cup_count_${n}`);
+                const resEl=document.getElementById(`cup_result_${n}`);
+                if(perEl)perEl.value=cups.per||'';
+                if(cntEl)cntEl.value=cups.count||'';
+                if(resEl){
+                    const cupTotal=calcCupTotal(n);
+                    resEl.textContent=fmtMoney(cupTotal);
+                }
+                const saveCup=()=>{
+                    const per=parseInt(perEl.value)||0;
+                    const cnt=parseInt(cntEl.value)||0;
+                    const total=per*cnt*n;
+                    resEl.textContent=fmtMoney(total);
+                    let ds3=getDsData();
+                    ds3.safe[`cups_${n}`]={per:perEl.value,count:cntEl.value};
+                    saveDsData(ds3);
+                    updateNomTotal(n);
+                    updateSafeTotal();
+                    updateGrandTotal();
+                };
+                if(perEl)perEl.addEventListener('input',saveCup);
+                if(cntEl)cntEl.addEventListener('input',saveCup);
+            },0);
+        }
+
+        nomRow.appendChild(rowsWrap);
+
+        function refreshNomRows(){
+            const dsNow=getDsData();
+            const data=dsNow.safe[n]||[null];
+            inputRows.innerHTML='';
+            data.forEach((val,i)=>{
+                const nomItem=document.createElement('div');
+                nomItem.className='nom-row-item';
+                const numEl=document.createElement('span');
+                numEl.className='nom-row-num';
+                numEl.textContent=i+1;
+                const vc=document.createElement('div');
+                vc.className='nom-vc';
+                const dec=document.createElement('button');
+                dec.className='nom-vc-btn'; dec.textContent='−';
+                const inp=document.createElement('input');
+                inp.className='nom-vc-input'; inp.type='number'; inp.inputMode='numeric';
+                inp.step=1; inp.min=0; inp.placeholder='0';
+                inp.value=val==null||val===''?'':val;
+                const inc2=document.createElement('button');
+                inc2.className='nom-vc-btn'; inc2.textContent='+';
+                vc.appendChild(dec); vc.appendChild(inp); vc.appendChild(inc2);
+                const acts=document.createElement('div');
+                acts.className='nom-row-actions';
+                const addBtn=document.createElement('button');
+                addBtn.className='nom-row-btn'; addBtn.textContent='+';
+                const delBtn=document.createElement('button');
+                delBtn.className='nom-row-btn del'; delBtn.textContent='−';
+                acts.appendChild(addBtn); acts.appendChild(delBtn);
+                nomItem.appendChild(numEl); nomItem.appendChild(vc); nomItem.appendChild(acts);
+                inputRows.appendChild(nomItem);
+
+                const saveNom=()=>{
+                    let nv=inp.value===''?null:Math.max(0,parseInt(inp.value)||0);
+                    if(nv!==null)inp.value=nv;
+                    let ds2=getDsData();
+                    ds2.safe[n][i]=nv;
+                    saveDsData(ds2);
+                    updateNomTotal(n);
+                    updateSafeTotal();
+                    updateGrandTotal();
+                };
+                inp.addEventListener('change',saveNom);
+                inp.addEventListener('blur',saveNom);
+                dec.addEventListener('click',()=>{
+                    let v=inp.value===''?0:parseInt(inp.value)||0;
+                    inp.value=Math.max(0,v-1); saveNom();
+                });
+                inc2.addEventListener('click',()=>{
+                    let v=inp.value===''?0:parseInt(inp.value)||0;
+                    inp.value=v+1; saveNom();
+                });
+                addBtn.addEventListener('click',()=>{
+                    let ds2=getDsData();
+                    ds2.safe[n].push(null);
+                    saveDsData(ds2);
+                    refreshNomRows();
+                });
+                delBtn.addEventListener('click',()=>{
+                    let ds2=getDsData();
+                    if(ds2.safe[n].length===1)ds2.safe[n]=[null];
+                    else ds2.safe[n].splice(i,1);
+                    saveDsData(ds2);
+                    refreshNomRows();
+                    updateNomTotal(n);
+                    updateSafeTotal();
+                    updateGrandTotal();
+                });
+            });
+        }
+        refreshNomRows();
+        body.appendChild(nomRow);
+    });
+    }
+
+    function renderSafeBags(){
+        const container=document.getElementById('safeBagsList');
+        if(!container)return;
+        const ds=getDsData();
+        container.innerHTML='';
+        (ds.safeBags||[]).forEach((bag,idx)=>{
+            const card=document.createElement('div');
+            card.className='safe-bag-card';
+            card.id=`safebag_${bag.id}`;
+            const header=document.createElement('div');
+            header.className='cash-card-header';
+            header.innerHTML=`<div class="cash-card-title">▣ ${bag.name}</div><div class="cash-card-result ${parseMoney(bag.amount)>0?'positive':'zero'}" id="safebagresheader_${bag.id}">${fmtMoney(parseMoney(bag.amount))}</div>`;
+            card.appendChild(header);
+            const body=document.createElement('div');
+            body.className='cash-card-body';
+            const dateField=document.createElement('div');
+            dateField.className='cash-field';
+            dateField.innerHTML='<div class="cash-field-label">Дата сейф-пакета</div>';
+            const dateInput=document.createElement('input');
+            dateInput.className='cash-field-input'; dateInput.type='date'; dateInput.value=bag.date||'';
+            dateField.appendChild(dateInput); body.appendChild(dateField);
+            const field=document.createElement('div');
+            field.className='cash-field';
+            field.innerHTML='<div class="cash-field-label">Сумма в сейф-пакете</div>';
+            const input=document.createElement('input');
+            input.className='cash-field-input'; input.type='number'; input.inputMode='decimal'; input.min='0'; input.placeholder='0'; input.value=bag.amount||'';
+            field.appendChild(input); body.appendChild(field);
+            const result=document.createElement('div');
+            result.className='cash-result-row';
+            result.innerHTML=`<div class="cash-result-label">Итого по пакету</div><div class="cash-result-val ${parseMoney(bag.amount)>0?'positive':'zero'}" id="safebagres_${bag.id}">${fmtMoney(parseMoney(bag.amount))}</div>`;
+            body.appendChild(result); card.appendChild(body);
+            if((ds.safeBags||[]).length>1){
+                const footer=document.createElement('div'); footer.className='cash-card-footer';
+                const del=document.createElement('button'); del.className='delete-cash-btn'; del.textContent='✖ Удалить сейф-пакет';
+                del.onclick=()=>{showConfirm(`Удалить «${bag.name}»?`,()=>{pushUndoSnapshot(`Удаление «${bag.name}»`);const next=getDsData();next.safeBags=next.safeBags.filter(x=>x.id!==bag.id);saveDsData(next);renderSafeBags();updateSafeTotal();updateGrandTotal();});};
+                footer.appendChild(del); card.appendChild(footer);
+            }
+            const save=()=>{
+                const next=getDsData(); const current=next.safeBags.find(x=>x.id===bag.id); if(!current)return;
+                current.amount=input.value; saveDsData(next);
+                const value=parseMoney(current.amount); const cls=value>0?'positive':'zero';
+                const valEl=document.getElementById(`safebagres_${bag.id}`); const headEl=document.getElementById(`safebagresheader_${bag.id}`);
+                if(valEl){valEl.textContent=fmtMoney(value);valEl.className=`cash-result-val ${cls}`;}
+                if(headEl){headEl.textContent=fmtMoney(value);headEl.className=`cash-card-result ${cls}`;}
+                updateSafeTotal(); updateGrandTotal();
+            };
+            input.addEventListener('change',save); input.addEventListener('blur',save);
+            dateInput.addEventListener('change',()=>{const next=getDsData();const current=next.safeBags.find(x=>x.id===bag.id);if(!current)return;current.date=dateInput.value;saveDsData(next);});
+            container.appendChild(card);
+        });
+        const addBtn=document.getElementById('addSafeBagBtn');
+        if(addBtn){addBtn.disabled=(ds.safeBags||[]).length>=6;addBtn.title=addBtn.disabled?'Можно добавить не более 6 сейф-пакетов':'';}
+    }
+
+    function calcCupTotal(n){
+    if(n!==10&&n!==1)return 0;
+    const ds=getDsData();
+    const cups=ds.safe[`cups_${n}`]||{per:'',count:''};
+    const per=parseInt(cups.per)||0;
+    const cnt=parseInt(cups.count)||0;
+    return per*cnt*n;
+}
+
+function calcNominalTotal(n){
+    const ds=getDsData();
+    const rows=ds.safe[n]||[null];
+    const rowsTotal=rows.reduce((s,v)=>s+n*(v==null||v===''?0:parseInt(v)||0),0);
+    const cupTotal=calcCupTotal(n);
+    return rowsTotal+cupTotal;
+}
+
+function calcCupCount(n){
+    if(n!==10&&n!==1)return 0;
+    const ds=getDsData();
+    const cups=ds.safe[`cups_${n}`]||{per:'',count:''};
+    const per=parseInt(cups.per)||0;
+    const cnt=parseInt(cups.count)||0;
+    return per*cnt;
+}
+
+function calcNominalCount(n){
+    const ds=getDsData();
+    const rows=ds.safe[n]||[null];
+    const rowsCount=rows.reduce((s,v)=>s+(v==null||v===''?0:parseInt(v)||0),0);
+    return rowsCount+calcCupCount(n);
+}
+
+function updateNomTotal(n){
+    const total=calcNominalTotal(n);
+    const el=document.getElementById(`nomsum_${n}`);
+    if(el){el.textContent=fmtMoney(total);el.className='nominal-sum'+(total===0?' zero':'');}
+    const countEl=document.getElementById(`nomcount_${n}`);
+    if(countEl)countEl.textContent=`${calcNominalCount(n)} шт`;
+    // обновляем поле результата стакана
+    if(n===10||n===1){
+        const resEl=document.getElementById(`cup_result_${n}`);
+        if(resEl)resEl.textContent=fmtMoney(calcCupTotal(n));
+    }
+}
+    function updateSafeTotal(){
+        const total=calcSafeTotal();
+        const el=document.getElementById('safeTotal');
+        const hel=document.getElementById('safeTotalHeader');
+        if(el)el.textContent=fmtMoney(total);
+        if(hel)hel.textContent=fmtMoney(total);
+    }
+
+    /* ════════════════════════════════
+       DS — КАССЫ / АВТО
+    ════════════════════════════════ */
+    function renderCashList(type){
+        const ds=getDsData();
+        const items=type==='kassa'?ds.kassas:ds.avtos;
+        const listId=type==='kassa'?'kassaList':'avtoList';
+        const container=document.getElementById(listId);
+        if(!container)return;
+        container.innerHTML='';
+        items.forEach((item,idx)=>{
+            container.appendChild(buildCashCard(item,idx,type));
+        });
+        updateCashSectionTotal(type);
+    }
+
+    function buildCashCard(item,idx,type){
+        const result=calcCashItem(item);
+        const card=document.createElement('div');
+        card.className='cash-card';
+        card.id=`cashcard_${item.id}`;
+
+        const header=document.createElement('div');
+        header.className='cash-card-header';
+        const resClass=result>0?'positive':result<0?'negative':'zero';
+        header.innerHTML=`
+            <div class="cash-card-title">
+                ${type==='kassa'?'💵':'🚗'} ${item.name}
+            </div>
+            <div class="cash-card-result ${resClass}" id="cashresheader_${item.id}">${fmtMoney(result)}</div>`;
+        card.appendChild(header);
+
+        const body=document.createElement('div');
+        body.className='cash-card-body';
+
+        // Всего
+        const vsField=document.createElement('div');
+        vsField.className='cash-field';
+        vsField.innerHTML=`<div class="cash-field-label">Всего</div>`;
+        const vsInp=document.createElement('input');
+        vsInp.className='cash-field-input';
+        vsInp.type='number'; vsInp.inputMode='decimal';
+        vsInp.placeholder='0'; vsInp.value=item.vsego||'';
+        vsField.appendChild(vsInp);
+        body.appendChild(vsField);
+
+        // Выручка
+        const vrField=document.createElement('div');
+        vrField.className='cash-field';
+        vrField.innerHTML=`<div class="cash-field-label">Выручка</div>`;
+        const vrInp=document.createElement('input');
+        vrInp.className='cash-field-input';
+        vrInp.type='number'; vrInp.inputMode='decimal';
+        vrInp.placeholder='0'; vrInp.value=item.vyruchka||'';
+        vrField.appendChild(vrInp);
+        body.appendChild(vrField);
+
+        // Итог
+        const resRow=document.createElement('div');
+        resRow.className='cash-result-row';
+        const resVal=result>0?'positive':result<0?'negative':'zero';
+        resRow.innerHTML=`
+            <div class="cash-result-label">Итог (Всего − Выручка)</div>
+            <div class="cash-result-val ${resVal}" id="cashres_${item.id}">${fmtMoney(result)}</div>`;
+        body.appendChild(resRow);
+        card.appendChild(body);
+
+        // Кнопка удалить (если больше одной)
+        const ds=getDsData();
+        const items=type==='kassa'?ds.kassas:ds.avtos;
+        if(items.length>1){
+            const footer=document.createElement('div');
+            footer.className='cash-card-footer';
+            const delBtn=document.createElement('button');
+            delBtn.className='delete-cash-btn';
+            delBtn.textContent=`✖ Удалить ${type==='kassa'?'кассу':'авто'}`;
+            delBtn.onclick=()=>{
+                showConfirm(`Удалить "${item.name}"?`,()=>{
+                    pushUndoSnapshot(`Удаление «${item.name}»`);
+                    let ds2=getDsData();
+                    if(type==='kassa')ds2.kassas.splice(idx,1);
+                    else ds2.avtos.splice(idx,1);
+                    saveDsData(ds2);
+                    renderCashList(type);
+                    updateGrandTotal();
+                });
+            };
+            footer.appendChild(delBtn);
+            card.appendChild(footer);
+        }
+
+        // Events
+        const saveField=()=>{
+            let ds2=getDsData();
+            const arr=type==='kassa'?ds2.kassas:ds2.avtos;
+            const ci=arr.findIndex(x=>x.id===item.id);
+            if(ci!==-1){
+                arr[ci].vsego=vsInp.value;
+                arr[ci].vyruchka=vrInp.value;
+                saveDsData(ds2);
+                const newRes=calcCashItem(arr[ci]);
+                const rc=newRes>0?'positive':newRes<0?'negative':'zero';
+                const el=document.getElementById(`cashres_${item.id}`);
+                const hel=document.getElementById(`cashresheader_${item.id}`);
+                if(el){el.textContent=fmtMoney(newRes);el.className=`cash-result-val ${rc}`;}
+                if(hel){hel.textContent=fmtMoney(newRes);hel.className=`cash-card-result ${rc}`;}
+                updateCashSectionTotal(type);
+                updateGrandTotal();
+            }
+        };
+        vsInp.addEventListener('change',saveField);
+        vsInp.addEventListener('blur',saveField);
+        vrInp.addEventListener('change',saveField);
+        vrInp.addEventListener('blur',saveField);
+
+        return card;
+    }
+
+    function updateCashSectionTotal(type){
+        const ds=getDsData();
+        const items=type==='kassa'?ds.kassas:ds.avtos;
+        const total=items.reduce((s,it)=>s+calcCashItem(it),0);
+        const hid=type==='kassa'?'kassaTotalHeader':'avtoTotalHeader';
+        const el=document.getElementById(hid);
+        if(el)el.textContent=fmtMoney(total);
+    }
+
+    /* ════════════════════════════════
+       DS — ОБЩИЙ ИТОГ
+    ════════════════════════════════ */
+    function updateGrandTotal(){
+        const safeT=calcSafeTotal();
+        const kassaT=calcKassasTotal();
+        const avtoT=calcAvtosTotal();
+        const grand=safeT+kassaT+avtoT;
+
+        const ds=getDsData();
+        const breakdown=document.getElementById('dsGrandBreakdown');
+        if(!breakdown)return;
+        let lines=`<div class="ds-grand-line"><div class="ds-grand-line-label">🏦 Сейф</div><div class="ds-grand-line-val">${fmtMoney(safeT)}</div></div>`;
+        ds.kassas.forEach(k=>{
+            const r=calcCashItem(k);
+            lines+=`<div class="ds-grand-line"><div class="ds-grand-line-label">💵 ${k.name}</div><div class="ds-grand-line-val">${fmtMoney(r)}</div></div>`;
+        });
+        ds.avtos.forEach(a=>{
+            const r=calcCashItem(a);
+            lines+=`<div class="ds-grand-line"><div class="ds-grand-line-label">🚗 ${a.name}</div><div class="ds-grand-line-val">${fmtMoney(r)}</div></div>`;
+        });
+        breakdown.innerHTML=lines;
+        const sumEl=document.getElementById('dsGrandSum');
+        if(sumEl)sumEl.textContent=fmtMoney(grand);
+        const cashBookInput=document.getElementById('cashBookInput');
+        const cashBookDiff=document.getElementById('cashBookDiff');
+        const cashBookValue=parseMoney(ds.cashBook);
+        if(cashBookInput && document.activeElement!==cashBookInput)cashBookInput.value=ds.cashBook||'';
+        if(cashBookDiff){
+            cashBookDiff.textContent=ds.cashBook===''||ds.cashBook===null||ds.cashBook===undefined?'':`Разница с итогом: ${fmtMoney(cashBookValue-grand)}`;
+        }
+    }
+
+    /* ════════════════════════════════
+       DS — ADD KASSA / AVTO
+    ════════════════════════════════ */
+    function addKassa(){
+        let ds=getDsData();
+        const num=ds.kassas.length+1;
+        ds.kassas.push({id:'k'+Date.now(),name:`Касса ${num}`,vsego:'',vyruchka:''});
+        saveDsData(ds);
+        renderCashList('kassa');
+        updateGrandTotal();
+    }
+    function addSafeBag(){
+        const ds=getDsData();
+        if(ds.safeBags.length>=6){toast('Можно добавить не более 6 сейф-пакетов');return;}
+        const num=ds.safeBags.length+1;
+        ds.safeBags.push({id:'sb'+Date.now(),name:`Сейф-пакет ${num}`,amount:'',date:localDateInputValue()});
+        saveDsData(ds);
+        renderSafeBags(); updateSafeTotal(); updateGrandTotal();
+    }
+    function addAvto(){
+        let ds=getDsData();
+        const num=ds.avtos.length+1;
+        ds.avtos.push({id:'a'+Date.now(),name:`Авто ${num}`,vsego:'',vyruchka:''});
+        saveDsData(ds);
+        renderCashList('avto');
+        updateGrandTotal();
+    }
+
+    /* ════════════════════════════════
+       DS — RENDER ALL
+    ════════════════════════════════ */
+    function renderDs(){
+        renderSafe();
+        renderSafeBags();
+        renderCashList('kassa');
+        renderCashList('avto');
+        updateSafeTotal();
+        updateGrandTotal();
+    }
+
+    /* ════════════════════════════════
+       DS — CLEAR
+    ════════════════════════════════ */
+    function clearDs(){
+        showConfirm('Очистить все данные ДС?',()=>{
+            pushUndoSnapshot('Очистка ДС');
+            const fresh={
+                safe:NOMINALS.reduce((acc,n)=>{acc[n]=[null];return acc;},{}),
+                safeBags:defaultSafeBags(),
+                cashBook:'',
+                kassas:[
+                    {id:'k1',name:'Касса 1',vsego:'',vyruchka:''}
+                ],
+                avtos:[{id:'a1',name:'Авто 1',vsego:'',vyruchka:''}]
+            };
+            saveDsData(fresh);
+            renderDs();
+            toast('🧹 Данные ДС очищены');
+        });
+    }
+
+    /* ════════════════════════════════
+       CLEAR / RESET INVENTORY
+    ════════════════════════════════ */
+    function clearLocation(){
+        showConfirm(`Очистить все данные для "${currentLoc}"?`,()=>{
+            pushUndoSnapshot(`Очистка помещения «${currentLoc}»`);
+            const rules=locationRules[currentLoc]||{};
+            Object.keys(rules).forEach(pid=>{
+                rules[pid].forEach((_,uIdx)=>setRows(currentLoc,pid,uIdx,[null]));
+                setCU(currentLoc,pid,[]);
+            });
+            let cps=getCustomProducts(currentLoc);
+            cps.forEach(cp=>{cp.rows=[null];cp.customUnits=[];});
+            setCustomProducts(currentLoc,cps);
+            document.getElementById('addProductFormWrap').innerHTML='';
+            renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
+            toast('🧹 Помещение очищено');
+        });
+    }
+    function fullReset(){
+        showConfirm('⚠️ Удалить ВСЕ данные по всем помещениям?',()=>{
+            pushUndoSnapshot('Полный сброс инвентаризации');
+            locations.forEach(loc=>{
+                const rules=locationRules[loc]||{};
+                Object.keys(rules).forEach(pid=>{
+                    rules[pid].forEach((_,uIdx)=>setRows(loc,pid,uIdx,[null]));
+                    setCU(loc,pid,[]);
+                });
+                stdProducts.forEach(p=>setCU(loc,p.id,[]));
+                setCustomProducts(loc,[]);
+            });
+            document.getElementById('addProductFormWrap').innerHTML='';
+            renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
+            if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+            toast('🗑️ Все данные удалены');
+        });
+    }
+
+    /* ════════════════════════════════
+       TAB SWITCH
+    ════════════════════════════════ */
+    function switchTab(tab){
+        document.querySelectorAll('.tab-view').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById('appBody').scrollTop=0;
+        if(tab==='inventory'){
+            document.getElementById('tabInventory').classList.add('active');
+            document.getElementById('navInventory').classList.add('active');
+        } else if(tab==='summary'){
+            document.getElementById('tabSummary').classList.add('active');
+            document.getElementById('navSummary').classList.add('active');
+            renderSummary();
+        } else if(tab==='ds'){
+            document.getElementById('tabDs').classList.add('active');
+            document.getElementById('navDs').classList.add('active');
+            renderDs();
+        }
+    }
+
+    /* ════════════════════════════════
+       INIT
+    ════════════════════════════════ */
+    function init(){
+        renderLocStrip(); renderStats(); renderCategoryStrip(); renderProducts(); updateNavBadge();
+        updateUndoButton();
+
+        document.getElementById('clearLocBtn').onclick=clearLocation;
+        document.getElementById('hardResetBtn').onclick=fullReset;
+        document.getElementById('addProductBtn').onclick=showAddProductForm;
+        document.getElementById('addSafeBagBtn').onclick=addSafeBag;
+        document.getElementById('addKassaBtn').onclick=addKassa;
+        document.getElementById('addAvtoBtn').onclick=addAvto;
+        document.getElementById('dsClearBtn').onclick=clearDs;
+        document.getElementById('undoBtn').onclick=undoLastAction;
+        document.getElementById('cashBookInput').addEventListener('input',e=>{
+            const ds=getDsData(); ds.cashBook=e.target.value; saveDsData(ds); updateGrandTotal();
+        });
+
+        document.getElementById('confirmOkBtn').onclick=()=>{
+            const cb=_confirmCallback;
+            hideConfirm();
+            if(cb)cb();
+        };
+        document.getElementById('confirmCancelBtn').onclick=hideConfirm;
+
+        document.querySelectorAll('.nav-btn').forEach(btn=>{
+            btn.onclick=()=>switchTab(btn.dataset.tab);
+        });
+
+        document.getElementById('searchInput').oninput=e=>{
+            searchQ=e.target.value; renderSummary();
+        };
+
+        const btnAll=document.getElementById('filterAllBtn');
+        const btnFilled=document.getElementById('filterFilledBtn');
+        btnAll.onclick=()=>{filterOnlyFilled=false;btnAll.classList.add('active');btnFilled.classList.remove('active');renderSummary();};
+        btnFilled.onclick=()=>{filterOnlyFilled=true;btnFilled.classList.add('active');btnAll.classList.remove('active');renderSummary();};
+        const appBody=document.getElementById('appBody');
+        const scrollTopFab=document.getElementById('scrollTopFab');
+        appBody.addEventListener('scroll',()=>scrollTopFab.classList.toggle('visible',appBody.scrollTop>200),{passive:true});
+        scrollTopFab.onclick=()=>appBody.scrollTo({top:0,behavior:'smooth'});
+    }
+
+        init();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+})();
+</script>
+</body>
+</html>
+
