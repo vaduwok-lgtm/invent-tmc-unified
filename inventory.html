@@ -731,6 +731,7 @@ function genId(){ return 'cp_'+Date.now()+'_'+Math.random().toString(36).slice(2
 
 const NQ_PREFIX = 'nq_';
 const nqRowsCache=new Map(), nqLocsCache=new Map(), nqUnitsCache=new Map(), newTotalsCache=new Map();
+function clearInventoryValueCaches(){nqRowsCache.clear();newTotalsCache.clear();}
 function nqLocsKey(code){ return NQ_PREFIX+'locs_'+code; }
 function nqRowsKey(code,loc,uIdx){ return NQ_PREFIX+loc+'_'+code+'_'+uIdx; }
 function totalCacheKey(loc,code){return JSON.stringify([loc,code]);}
@@ -1971,7 +1972,6 @@ function resetStoredProductCounts(loc,pid){
       localStorage.setItem(key,JSON.stringify(rows));
     }catch(e){console.warn('Не удалось очистить товар',pid,e);}
   });
-  nqRowsCache.clear();newTotalsCache.clear();
   clearInventoryValueCaches();
 }
 function resetStoredInventoryCounts(locFilter){
