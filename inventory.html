@@ -1971,6 +1971,7 @@ function resetStoredProductCounts(loc,pid){
       localStorage.setItem(key,JSON.stringify(rows));
     }catch(e){console.warn('Не удалось очистить товар',pid,e);}
   });
+  nqRowsCache.clear();newTotalsCache.clear();
   clearInventoryValueCaches();
 }
 function resetStoredInventoryCounts(locFilter){
@@ -2000,6 +2001,7 @@ function resetStoredInventoryCounts(locFilter){
       localStorage.setItem(key,JSON.stringify(rows));
     }catch(e){console.warn('Не удалось очистить запись инвентаризации',key,e);}
   });
+  nqRowsCache.clear();newTotalsCache.clear();
   clearInventoryValueCaches();
 }
 function clearLocation(){
