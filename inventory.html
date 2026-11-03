@@ -730,14 +730,42 @@ function setCustomProducts(loc,arr){ localStorage.setItem(`cprods_${loc}`, JSON.
 function genId(){ return 'cp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
 
 const NQ_PREFIX = 'nq_';
+const nqRowsCache=new Map(), nqLocsCache=new Map(), nqUnitsCache=new Map(), newTotalsCache=new Map();
 function nqLocsKey(code){ return NQ_PREFIX+'locs_'+code; }
 function nqRowsKey(code,loc,uIdx){ return NQ_PREFIX+loc+'_'+code+'_'+uIdx; }
-function getNqLocs(code){ const r=localStorage.getItem(nqLocsKey(code)); if(r) return JSON.parse(r); return ['На станции']; }
-function setNqLocs(code,arr){ localStorage.setItem(nqLocsKey(code), JSON.stringify(arr)); }
-function getNqRows(code,loc,uIdx){ const r=localStorage.getItem(nqRowsKey(code,loc,uIdx)); return r?JSON.parse(r):[null]; }
-function setNqRows(code,loc,uIdx,rows){ localStorage.setItem(nqRowsKey(code,loc,uIdx), JSON.stringify(rows)); }
-function getNqCustomUnits(code){ const r=localStorage.getItem(NQ_PREFIX+'units_'+code); return r?JSON.parse(r):[]; }
-function setNqCustomUnits(code,units){ localStorage.setItem(NQ_PREFIX+'units_'+code, JSON.stringify(units)); }
+function totalCacheKey(loc,code){return JSON.stringify([loc,code]);}
+function clearNewProductTotals(code){for(const loc of locations)newTotalsCache.delete(totalCacheKey(loc,code));}
+function nqData(key,cache,fallback){
+  if(cache.has(key))return cache.get(key);
+  const raw=localStorage.getItem(key),value=raw?JSON.parse(raw):fallback;
+  cache.set(key,value);return value;
+}
+function getNqLocs(code){return nqData(nqLocsKey(code),nqLocsCache,['На станции']);}
+function setNqLocs(code,arr){localStorage.setItem(nqLocsKey(code),JSON.stringify(arr));nqLocsCache.set(nqLocsKey(code),arr);clearNewProductTotals(code);}
+function getNqRows(code,loc,uIdx){const key=nqRowsKey(code,loc,uIdx);return nqData(key,nqRowsCache,[null]);}
+function setNqRows(code,loc,uIdx,rows){const key=nqRowsKey(code,loc,uIdx);localStorage.setItem(key,JSON.stringify(rows));nqRowsCache.set(key,rows);newTotalsCache.delete(totalCacheKey(loc,code));}
+function getNqCustomUnits(code){return nqData(NQ_PREFIX+'units_'+code,nqUnitsCache,[]);}
+function setNqCustomUnits(code,units){localStorage.setItem(NQ_PREFIX+'units_'+code,JSON.stringify(units));nqUnitsCache.set(NQ_PREFIX+'units_'+code,units);clearNewProductTotals(code);}
+function removeNqCustomUnit(code,customIndex,defaultUnitCount){
+  const units=getNqCustomUnits(code);
+  if(customIndex<0||customIndex>=units.length)return false;
+  const oldLastIndex=defaultUnitCount+units.length;
+  const firstIndex=defaultUnitCount+customIndex+1;
+  for(const loc of locations){
+    for(let index=firstIndex;index<oldLastIndex;index++){
+      const source=localStorage.getItem(nqRowsKey(code,loc,index+1));
+      const targetKey=nqRowsKey(code,loc,index);
+      if(source===null)localStorage.removeItem(targetKey);
+      else localStorage.setItem(targetKey,source);
+    }
+    localStorage.removeItem(nqRowsKey(code,loc,oldLastIndex));
+  }
+  units.splice(customIndex,1);
+  setNqCustomUnits(code,units);
+  nqRowsCache.clear();
+  clearNewProductTotals(code);
+  return true;
+}
 
 /* ═══════════════════════════════════════
    ХЕЛПЕРЫ
@@ -773,9 +801,11 @@ function getOldLocTotal(loc,pid){
   return t;
 }
 function getNewLocTotal(loc,code){
+  const key=totalCacheKey(loc,code);
+  if(newTotalsCache.has(key))return newTotalsCache.get(key);
   const n = NOMENCLATURE.find(x=>x.code===code);
-  if(!n) return 0;
-  if(!getNqLocs(code).includes(loc)) return 0;
+  if(!n){newTotalsCache.set(key,0);return 0;}
+  if(!getNqLocs(code).includes(loc)){newTotalsCache.set(key,0);return 0;}
   let t=0;
   getNqRows(code,loc,0).forEach(v=>{ t += v==null||v===''?0:parseFloat(v); });
   (n.units||[]).forEach((u,i)=>{
@@ -784,7 +814,7 @@ function getNewLocTotal(loc,code){
   getNqCustomUnits(code).forEach((unit,i)=>{
     getNqRows(code,loc,(n.units||[]).length+i+1).forEach(v=>{ t += (v==null||v===''?0:parseFloat(v))*unit.coefficient; });
   });
-  return t;
+  newTotalsCache.set(key,t);return t;
 }
 function getLocTotal(loc,pid){
   const f = findProduct(pid);
@@ -833,6 +863,7 @@ function undoLastAction(){
   localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
   getAppDataKeys().forEach(k=>localStorage.removeItem(k));
   Object.keys(last.data).forEach(k=>localStorage.setItem(k,last.data[k]));
+  clearInventoryValueCaches();
   renderLocStrip(); renderStats(); renderCategoryStrip(); renderProducts(); updateNavBadge();
   document.getElementById('addProductFormWrap').innerHTML='';
   if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
@@ -1235,7 +1266,27 @@ function buildNewUnitBlock(n, uIdx, label){
   const subEl=document.createElement('div');
   subEl.className='unit-subtotal';
   subEl.id=`nqust_${code_}_${uIdx}`;
-  bHeader.appendChild(nameEl); bHeader.appendChild(subEl);
+  const customIndex=uIdx-(n.units||[]).length-1;
+  if(customIndex>=0){
+    const delBtn=document.createElement('button');
+    delBtn.type='button';
+    delBtn.setAttribute('aria-label',`Удалить фасовку ${label}`);
+    delBtn.title='Удалить свою фасовку';
+    delBtn.style.cssText='background:var(--danger-subtle);border:none;color:var(--danger);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;';
+    delBtn.textContent='✖';
+    delBtn.onclick=()=>{
+      showConfirm(`Удалить свою фасовку «${label}»?`,()=>{
+        pushUndoSnapshot(`Удаление фасовки «${label}»`);
+        if(removeNqCustomUnit(code_,customIndex,(n.units||[]).length)){
+          refreshNewCard(code_);
+          toast(`Фасовка «${label}» удалена`);
+        }
+      });
+    };
+    bHeader.appendChild(nameEl);bHeader.appendChild(subEl);bHeader.appendChild(delBtn);
+  }else{
+    bHeader.appendChild(nameEl);bHeader.appendChild(subEl);
+  }
   block.appendChild(bHeader);
 
   const rowsWrap=document.createElement('div');
@@ -1920,6 +1971,7 @@ function resetStoredProductCounts(loc,pid){
       localStorage.setItem(key,JSON.stringify(rows));
     }catch(e){console.warn('Не удалось очистить товар',pid,e);}
   });
+  clearInventoryValueCaches();
 }
 function resetStoredInventoryCounts(locFilter){
   const keys=[];
@@ -1948,6 +2000,7 @@ function resetStoredInventoryCounts(locFilter){
       localStorage.setItem(key,JSON.stringify(rows));
     }catch(e){console.warn('Не удалось очистить запись инвентаризации',key,e);}
   });
+  clearInventoryValueCaches();
 }
 function clearLocation(){
   showConfirm(`Очистить все данные для "${currentLoc}"?`,()=>{
