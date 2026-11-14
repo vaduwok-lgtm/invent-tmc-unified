@@ -501,6 +501,10 @@
         .summary-header h2 { font-size: 18px; font-weight: 700; }
         .summary-header p { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
         .summary-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 16px; }
+        .email-summary-wrap { padding: 0 16px 14px; }
+        .email-summary-btn { width: 100%; min-height: 46px; border: 0; border-radius: 12px; background: var(--primary); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+        .email-summary-btn:active { opacity: .85; }
+        .email-summary-note { margin-top: 6px; color: var(--gray-400); font-size: 12px; line-height: 1.4; }
         .ss-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 14px; }
         .ss-card .ss-val { font-size: 26px; font-weight: 700; color: var(--gray-800); line-height: 1; }
         .ss-card .ss-val.green { color: var(--green); }
@@ -914,6 +918,7 @@
     <div class="tab-view" id="tabSummary">
         <div class="summary-header"><h2>Итоги</h2><p>По всем помещениям</p></div>
         <div class="summary-stats" id="summaryStats"></div>
+        <div class="email-summary-wrap"><button class="email-summary-btn" id="emailSummaryBtn" type="button">✉️ Отправить итоги по почте</button><div class="email-summary-note">В открывшемся меню выбери «Почта» — письмо будет подготовлено как черновик.</div></div>
         <div class="search-wrap">
             <span class="search-icon">🔍</span>
             <input type="text" id="searchInput" placeholder="Поиск продукта...">
@@ -1981,6 +1986,43 @@
         });
     }
 
+    function openAuditSummaryEmail(){
+        const rows=[];
+        stdProducts.forEach(p=>{
+            const total=locations.reduce((sum,loc)=>sum+getLocTotal(loc,p.id),0);
+            const detail=locations.filter(loc=>locationRules[loc]?.[p.id])
+                .map(loc=>{const value=fmt(p.baseUnit,getLocTotal(loc,p.id));return value>0?loc+': '+value:null;})
+                .filter(Boolean).join('; ');
+            rows.push({name:p.name,unit:p.baseUnit,total:fmt(p.baseUnit,total),detail});
+        });
+        const seenCustom=new Set();
+        locations.forEach(loc=>{
+            getCustomProducts(loc).forEach(cp=>{
+                if(seenCustom.has(cp.id))return;
+                seenCustom.add(cp.id);
+                rows.push({name:cp.name,unit:cp.baseUnit,total:fmt(cp.baseUnit,getLocTotal(loc,cp.id)),detail:loc});
+            });
+        });
+        const filled=rows.filter(row=>Number(row.total)>0);
+        if(!filled.length){toast('Нет заполненных позиций для отправки');return;}
+        const clean=value=>String(value??'').replace(/[\t\r\n]+/g,' ').trim();
+        const date=new Date().toLocaleDateString('ru-RU');
+        const subject='Итоги аудита ТМЦ — '+date;
+        const body=[
+            subject,
+            '',
+            'Наименование\tКоличество\tЕдиница измерения\tПомещения',
+            ...filled.map(row=>[row.name,row.total,row.unit,row.detail].map(clean).join('\t'))
+        ].join('\n');
+        if(navigator.share){
+            navigator.share({title:subject,text:body}).catch(error=>{
+                if(error.name!=='AbortError')window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+            });
+        }else{
+            window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+        }
+    }
+
     /* ════════════════════════════════
        DS — СЕЙФ
     ════════════════════════════════ */
@@ -2614,6 +2656,7 @@ function updateNomTotal(n){
         document.getElementById('addAvtoBtn').onclick=addAvto;
         document.getElementById('dsClearBtn').onclick=clearDs;
         document.getElementById('undoBtn').onclick=undoLastAction;
+        document.getElementById('emailSummaryBtn').onclick=openAuditSummaryEmail;
         document.getElementById('cashBookInput').addEventListener('input',e=>{
             const ds=getDsData(); ds.cashBook=e.target.value; saveDsData(ds); updateGrandTotal();
         });
