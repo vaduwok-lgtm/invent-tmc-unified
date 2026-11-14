@@ -918,7 +918,7 @@
     <div class="tab-view" id="tabSummary">
         <div class="summary-header"><h2>Итоги</h2><p>По всем помещениям</p></div>
         <div class="summary-stats" id="summaryStats"></div>
-        <div class="email-summary-wrap"><button class="email-summary-btn" id="emailSummaryBtn" type="button">✉️ Отправить итоги по почте</button><div class="email-summary-note">В открывшемся меню выбери «Почта» — письмо будет подготовлено как черновик.</div></div>
+        <div class="email-summary-wrap"><button class="email-summary-btn" id="emailSummaryBtn" type="button">✉️ Отправить итоги по почте</button><div class="email-summary-note">Отправляется CSV со всеми позициями и двумя столбцами. В меню выбери «Почта»; если отправка файла недоступна, он скачается отдельно.</div></div>
         <div class="search-wrap">
             <span class="search-icon">🔍</span>
             <input type="text" id="searchInput" placeholder="Поиск продукта...">
@@ -1990,37 +1990,50 @@
         const rows=[];
         stdProducts.forEach(p=>{
             const total=locations.reduce((sum,loc)=>sum+getLocTotal(loc,p.id),0);
-            const detail=locations.filter(loc=>locationRules[loc]?.[p.id])
-                .map(loc=>{const value=fmt(p.baseUnit,getLocTotal(loc,p.id));return value>0?loc+': '+value:null;})
-                .filter(Boolean).join('; ');
-            rows.push({name:p.name,unit:p.baseUnit,total:fmt(p.baseUnit,total),detail});
+            rows.push({name:p.name,total:fmt(p.baseUnit,total)});
         });
         const seenCustom=new Set();
         locations.forEach(loc=>{
             getCustomProducts(loc).forEach(cp=>{
                 if(seenCustom.has(cp.id))return;
                 seenCustom.add(cp.id);
-                rows.push({name:cp.name,unit:cp.baseUnit,total:fmt(cp.baseUnit,getLocTotal(loc,cp.id)),detail:loc});
+                rows.push({name:cp.name,total:fmt(cp.baseUnit,getLocTotal(loc,cp.id))});
             });
         });
-        const filled=rows.filter(row=>Number(row.total)>0);
-        if(!filled.length){toast('Нет заполненных позиций для отправки');return;}
-        const clean=value=>String(value??'').replace(/[\t\r\n]+/g,' ').trim();
-        const date=new Date().toLocaleDateString('ru-RU');
-        const subject='Итоги аудита ТМЦ — '+date;
-        const body=[
-            subject,
-            '',
-            'Наименование\tКоличество\tЕдиница измерения\tПомещения',
-            ...filled.map(row=>[row.name,row.total,row.unit,row.detail].map(clean).join('\t'))
-        ].join('\n');
-        if(navigator.share){
-            navigator.share({title:subject,text:body}).catch(error=>{
-                if(error.name!=='AbortError')window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+        const safeCell=value=>{
+            let text=String(value??'').replace(/[\r\n]+/g,' ').trim();
+            if(/^[=+@-]/.test(text))text="'"+text;
+            return '"'+text.replace(/"/g,'""')+'"';
+        };
+        const d=new Date();
+        const date=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+        const subject='Итоги аудита ТМЦ — '+d.toLocaleDateString('ru-RU');
+        const csv='\uFEFF'+[
+            ['Наименование продукта','Количество по факту'].map(safeCell).join(';'),
+            ...rows.map(row=>{
+                const quantity=Number(row.total).toLocaleString('ru-RU',{useGrouping:false,maximumFractionDigits:2});
+                return [safeCell(row.name),safeCell(quantity)].join(';');
+            })
+        ].join('\r\n');
+        const file=new File([csv],'itogi-audita-tmc-'+date+'.csv',{type:'text/csv;charset=utf-8'});
+        if(navigator.canShare&&navigator.canShare({files:[file]})){
+            navigator.share({files:[file],title:subject,text:'Итоги по всем позициям аудита. CSV-файл содержит две колонки.'}).catch(error=>{
+                if(error.name!=='AbortError')downloadAuditCsv(file);
             });
-        }else{
-            window.location.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+            return;
         }
+        downloadAuditCsv(file);
+    }
+    function downloadAuditCsv(file){
+        const url=URL.createObjectURL(file);
+        const link=document.createElement('a');
+        link.href=url;
+        link.download=file.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        toast('CSV-файл скачан. Прикрепи его к письму вручную.');
     }
 
     /* ════════════════════════════════
