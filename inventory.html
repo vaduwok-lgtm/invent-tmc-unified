@@ -1906,6 +1906,59 @@ function showAddProductForm(){
 /* ═══════════════════════════════════════
    SUMMARY
 ═══════════════════════════════════════ */
+const SUMMARY_CATEGORY_ORDER=[
+  'Бекон','Булочки','Горячие безалкогольные напитки','Десерты','Картофель','Курица',
+  'Масло фритюрное','Молоко','Мука','Наггетсы и котлеты','Овощи','Панировочные смеси',
+  'Пиво','Промо','Соль','Соусы в КГ','Соусы порционные','Сыр','Тортильи',
+  'Упаковка IVL','Упаковка Pepsi','Упаковка Rostix','Холодные безалкогольные напитки'
+];
+const SUMMARY_CATEGORY_ALIASES={
+  'Говядина':'Наггетсы и котлеты',
+  'Горячие безалк. напитки':'Горячие безалкогольные напитки',
+  'Холодные безалк. напитки':'Холодные безалкогольные напитки',
+  'Упаковка ИВЛ':'Упаковка IVL',
+  'Упаковка Пепси':'Упаковка Pepsi',
+  'Упаковка Rostics':'Упаковка Rostix'
+};
+function normalizeSummaryCategory(category){return SUMMARY_CATEGORY_ALIASES[category]||category;}
+function getCustomSummaryCategory(product){
+  const name=(product.name||'').toLocaleLowerCase('ru').replace(/ё/g,'е');
+  const group=product.group||inferProductCategory(name);
+  const packagingName=/салфет|бумаг|этикет|крышк|стакан(?!чик)|трубоч|вилк|ложк|ведр|кламшелл|разделител|лопатк|баскет|коробк|упаков|пачк|тара|контейнер/.test(name);
+  if(group==='pack'||packagingName){
+    if(/ивл|ivl/.test(name))return 'Упаковка IVL';
+    if(/пепси|pepsi|evervess|эвервесс/.test(name))return 'Упаковка Pepsi';
+    return 'Упаковка Rostix';
+  }
+  if(/бекон|ветчин/.test(name))return 'Бекон';
+  if(/булоч|панини|чиабат|хлеб/.test(name))return 'Булочки';
+  if(/тортиль|ротти/.test(name))return 'Тортильи';
+  if(/донат|пирож|маффин|чизкейк|тарт|печень|вафел|топпинг|витамикс|десерт|кекс|круассан/.test(name))return 'Десерты';
+  if(/картоф/.test(name))return 'Картофель';
+  if(/наггет|котлет|кревет|крабов|сырные палоч/.test(name))return 'Наггетсы и котлеты';
+  if(/куриц|курин|голен|крыл|филе/.test(name))return 'Курица';
+  if(/масл.*фритюр|фритюр.*масл/.test(name))return 'Масло фритюрное';
+  if(/молок/.test(name))return 'Молоко';
+  if(/мук/.test(name))return 'Мука';
+  if(/лук|гриб|томат|помидор|огур|салат|руккол|капуст|морков|овощ|зелень/.test(name))return 'Овощи';
+  if(/паниров|оптиспайс|яично-молоч|смесь перцев|перец/.test(name))return 'Панировочные смеси';
+  if(/пив|beer/.test(name))return 'Пиво';
+  if(/сахар.*порц|порц.*сахар/.test(name))return 'Горячие безалкогольные напитки';
+  if(/игруш|брелок|сувенир|промо|миньон|космо|мимимишк|хонкай|союзмультфильм/.test(name))return 'Промо';
+  if(/соль/.test(name))return 'Соль';
+  if(/соус|кетчуп|майонез|горчиц|барбекю|терияки|чили|пикадор|цезар|жюльен|кунжут|приправа/.test(name)){
+    return /порцион|дип|dip|мл/.test(name)||product.baseUnit==='шт'?'Соусы порционные':'Соусы в КГ';
+  }
+  if(/сыр|хохланд/.test(name))return 'Сыр';
+  if(/лимонад|вода|сок|липтон|кола|эвервесс|чай холод|холодный чай|бабл|поппинг|top popping|popping|милкшейк/.test(name))return 'Холодные безалкогольные напитки';
+  if(group==='drinks')return 'Горячие безалкогольные напитки';
+  if(group==='meat')return 'Наггетсы и котлеты';
+  if(group==='veg')return 'Овощи';
+  if(group==='bakery')return 'Десерты';
+  if(group==='sauce')return 'Соусы в КГ';
+  if(group==='promo')return 'Промо';
+  return null;
+}
 function getSummaryRows(){
   const allRows=[];
   const mappedOldIds=new Set(Object.values(OLD_TO_EXCEL));
@@ -1919,14 +1972,14 @@ function getSummaryRows(){
       const detail=locations.filter(loc=>getOldLocs(oldId).includes(loc))
         .map(loc=>{const value=fmt(p.baseUnit,getOldLocTotal(loc,oldId));return value>0?`${loc}: ${value}`:null;})
         .filter(Boolean).join('\n');
-      allRows.push({pid:oldId,name:n.name,unit:p.baseUnit,total:display,detail,isCustom:false,isOld:true,group:n.group});
+      allRows.push({pid:oldId,name:n.name,unit:p.baseUnit,total:display,detail,isCustom:false,isOld:true,group:n.group,category:normalizeSummaryCategory(n.cat)});
     }else{
       const total=locations.reduce((sum,loc)=>sum+getNewLocTotal(loc,n.code),0);
       const display=fmt(n.unit,total);
       const detail=locations.filter(loc=>getNqLocs(n.code).includes(loc)&&getNewLocTotal(loc,n.code)>0)
         .map(loc=>`${loc}: ${fmt(n.unit,getNewLocTotal(loc,n.code))}`)
         .join('\n');
-      allRows.push({pid:n.code,name:n.name,unit:n.unit,total:display,detail,isCustom:false,isOld:false,group:n.group});
+      allRows.push({pid:n.code,name:n.name,unit:n.unit,total:display,detail,isCustom:false,isOld:false,group:n.group,category:normalizeSummaryCategory(n.cat)});
     }
   });
   stdProducts.forEach(p=>{
@@ -1936,21 +1989,21 @@ function getSummaryRows(){
     const detail=locations.filter(loc=>getOldLocs(p.id).includes(loc))
       .map(loc=>{const value=fmt(p.baseUnit,getOldLocTotal(loc,p.id));return value>0?`${loc}: ${value}`:null;})
       .filter(Boolean).join('\n');
-    allRows.push({pid:p.id,name:p.name,unit:p.baseUnit,total:display,detail,isCustom:false,isOld:true,group:({chicken:'meat',potato:'veg',mixes:'sauce',pantry:'pantry',beer:'drinks',containers:'pack'})[productCategory(p.id)]||'pantry'});
+    const legacyCategory={p18:'Пиво',p19:'Пиво',p20:'Упаковка Pepsi',p21:'Упаковка Rostix',p22:'Упаковка Rostix',p23:'Упаковка Rostix'}[p.id]||null;
+    allRows.push({pid:p.id,name:p.name,unit:p.baseUnit,total:display,detail,isCustom:false,isOld:true,group:productCategory(p.id),category:legacyCategory});
   });
   const seenCustom=new Set();
   locations.forEach(loc=>{
     getCustomProducts(loc).forEach(cp=>{
       if(seenCustom.has(cp.id))return;
       seenCustom.add(cp.id);
-      allRows.push({pid:cp.id,name:cp.name,unit:cp.baseUnit,total:fmt(cp.baseUnit,getOldLocTotal(loc,cp.id)),detail:loc,isCustom:true,isOld:false,group:cp.group||'pantry'});
+      allRows.push({pid:cp.id,name:cp.name,unit:cp.baseUnit,total:fmt(cp.baseUnit,getOldLocTotal(loc,cp.id)),detail:loc,isCustom:true,isOld:false,group:cp.group||'pantry',category:getCustomSummaryCategory(cp)});
     });
   });
-  const groupOrder=Object.keys(NOMENCLATURE_GROUPS);
   allRows.sort((a,b)=>{
-    const ga=groupOrder.indexOf(a.group),gb=groupOrder.indexOf(b.group);
-    const ca=ga<0?groupOrder.length:ga,cb=gb<0?groupOrder.length:gb;
-    return ca-cb||a.name.localeCompare(b.name,'ru');
+    const ia=SUMMARY_CATEGORY_ORDER.indexOf(a.category),ib=SUMMARY_CATEGORY_ORDER.indexOf(b.category);
+    const ca=ia<0?SUMMARY_CATEGORY_ORDER.length:ia,cb=ib<0?SUMMARY_CATEGORY_ORDER.length:ib;
+    return ca-cb||a.name.localeCompare(b.name,'ru',{sensitivity:'base'});
   });
   return allRows;
 }
