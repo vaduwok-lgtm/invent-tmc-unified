@@ -31,10 +31,10 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.5;background:var(
 .header-brand{flex:1;min-width:0}
 .header-title{font-size:16px;font-weight:600;color:var(--text-primary);letter-spacing:-.02em;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .header-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
-.header-undo-btn,.header-reset-btn{position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:none;border:none;border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;touch-action:manipulation;transition:background-color var(--ease),color var(--ease)}
-.header-undo-btn:hover:not(:disabled),.header-reset-btn:hover{background:var(--border-light);color:var(--text-primary)}
-.header-undo-btn:disabled{opacity:.35;cursor:not-allowed}
-.header-undo-btn:focus-visible,.header-reset-btn:focus-visible,.nav-btn:focus-visible,.fab:focus-visible,.scroll-top-fab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.header-undo-btn,.header-redo-btn,.header-reset-btn{position:relative;display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:none;border:none;border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;touch-action:manipulation;transition:background-color var(--ease),color var(--ease)}
+.header-undo-btn:hover:not(:disabled),.header-redo-btn:hover:not(:disabled),.header-reset-btn:hover{background:var(--border-light);color:var(--text-primary)}
+.header-undo-btn:disabled,.header-redo-btn:disabled{opacity:.35;cursor:not-allowed}
+.header-undo-btn:focus-visible,.header-redo-btn:focus-visible,.header-reset-btn:focus-visible,.nav-btn:focus-visible,.fab:focus-visible,.scroll-top-fab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .undo-badge{position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-size:9px;font-weight:600;font-variant-numeric:tabular-nums;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--surface)}
 
 /* BODY */
@@ -179,6 +179,10 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.5;background:var(
 .summary-header h2{font-size:18px;font-weight:700}
 .summary-header p{font-size:12px;color:var(--text-tertiary);margin-top:2px}
 .summary-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px}
+.email-summary-wrap{padding:0 16px 14px}
+.email-summary-btn{width:100%;min-height:46px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer;touch-action:manipulation}
+.email-summary-btn:active{opacity:.85}
+.email-summary-note{margin-top:6px;color:var(--text-tertiary);font-size:12px;line-height:1.4}
 .ss-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px}
 .ss-card .ss-val{font-size:26px;font-weight:700;color:var(--text-primary);line-height:1;font-variant-numeric:tabular-nums}
 .ss-card .ss-val.green{color:var(--success)}
@@ -211,7 +215,7 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.5;background:var(
 .confirm-overlay{position:fixed;inset:0;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center;padding:24px;z-index:2000;opacity:0;pointer-events:none;transition:opacity .15s ease}
 .confirm-overlay.show{opacity:1;pointer-events:auto}
 .confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:100%;max-width:320px;box-shadow:var(--shadow-lg)}
-.confirm-msg{font-size:15px;font-weight:500;color:var(--text-primary);line-height:1.5;margin-bottom:16px}
+.confirm-msg{white-space:pre-line;font-size:15px;font-weight:500;color:var(--text-primary);line-height:1.5;margin-bottom:16px}
 .confirm-btns{display:flex;gap:8px}
 .confirm-btns button{flex:1;padding:10px 12px;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:600;border:none;cursor:pointer;touch-action:manipulation}
 .confirm-cancel{background:var(--border-light);color:var(--text-secondary)}
@@ -238,6 +242,9 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.5;background:var(
     <button class="header-undo-btn" id="undoBtn" type="button" title="Отменить последнее действие" aria-label="Отменить последнее действие" disabled>
       <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M6.5 7H3.5V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 10a5.5 5.5 0 1 0 1.1-3.3L3.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="undo-badge" id="undoBadge" style="display:none;"></span>
+    </button>
+    <button class="header-redo-btn" id="redoBtn" type="button" title="Вернуть как было" aria-label="Вернуть как было" disabled>
+      <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M13.5 7h3V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 10a5.5 5.5 0 1 1-1.1-3.3L16.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <button class="header-reset-btn" id="hardResetBtn" type="button" title="Полный сброс" aria-label="Полный сброс">
       <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M4 6h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.5 6V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 6l.75 10h6.5l.75-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -270,6 +277,7 @@ body{font-family:var(--font-sans);font-size:15px;line-height:1.5;background:var(
   <div class="tab-view" id="tabSummary">
     <div class="summary-header"><h2>Итоги</h2><p>По всем помещениям</p></div>
     <div class="summary-stats" id="summaryStats"></div>
+    <div class="email-summary-wrap"><button class="email-summary-btn" id="emailSummaryBtn" type="button">✉️ Отправить итоги по почте</button><div class="email-summary-note">CSV содержит все товары и фактические количества. В меню выбери «Почта»; если отправка файла недоступна, файл скачается отдельно.</div></div>
     <div class="search-wrap">
       <span class="search-icon"><svg class="icon" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <input type="text" id="searchInput" placeholder="Поиск продукта...">
@@ -722,11 +730,11 @@ const NOMENCLATURE = [
    STORAGE
 ═══════════════════════════════════════ */
 function getRows(loc,pid,uIdx){ const r=localStorage.getItem(`inv_${loc}_${pid}_${uIdx}`); return r?JSON.parse(r):[null]; }
-function setRows(loc,pid,uIdx,rows){ localStorage.setItem(`inv_${loc}_${pid}_${uIdx}`, JSON.stringify(rows)); }
+function setRows(loc,pid,uIdx,rows){ clearRedoStack();localStorage.setItem(`inv_${loc}_${pid}_${uIdx}`, JSON.stringify(rows)); }
 function getCU(loc,pid){ const r=localStorage.getItem(`cu_${loc}_${pid}`); return r?JSON.parse(r):[]; }
-function setCU(loc,pid,cu){ localStorage.setItem(`cu_${loc}_${pid}`, JSON.stringify(cu)); }
+function setCU(loc,pid,cu){ clearRedoStack();localStorage.setItem(`cu_${loc}_${pid}`, JSON.stringify(cu)); }
 function getCustomProducts(loc){ const r=localStorage.getItem(`cprods_${loc}`); return r?JSON.parse(r):[]; }
-function setCustomProducts(loc,arr){ localStorage.setItem(`cprods_${loc}`, JSON.stringify(arr)); }
+function setCustomProducts(loc,arr){ clearRedoStack();localStorage.setItem(`cprods_${loc}`, JSON.stringify(arr)); }
 function genId(){ return 'cp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
 
 const NQ_PREFIX = 'nq_';
@@ -742,11 +750,11 @@ function nqData(key,cache,fallback){
   cache.set(key,value);return value;
 }
 function getNqLocs(code){return nqData(nqLocsKey(code),nqLocsCache,['На станции']);}
-function setNqLocs(code,arr){localStorage.setItem(nqLocsKey(code),JSON.stringify(arr));nqLocsCache.set(nqLocsKey(code),arr);clearNewProductTotals(code);}
+function setNqLocs(code,arr){clearRedoStack();localStorage.setItem(nqLocsKey(code),JSON.stringify(arr));nqLocsCache.set(nqLocsKey(code),arr);clearNewProductTotals(code);}
 function getNqRows(code,loc,uIdx){const key=nqRowsKey(code,loc,uIdx);return nqData(key,nqRowsCache,[null]);}
-function setNqRows(code,loc,uIdx,rows){const key=nqRowsKey(code,loc,uIdx);localStorage.setItem(key,JSON.stringify(rows));nqRowsCache.set(key,rows);newTotalsCache.delete(totalCacheKey(loc,code));}
+function setNqRows(code,loc,uIdx,rows){clearRedoStack();const key=nqRowsKey(code,loc,uIdx);localStorage.setItem(key,JSON.stringify(rows));nqRowsCache.set(key,rows);newTotalsCache.delete(totalCacheKey(loc,code));}
 function getNqCustomUnits(code){return nqData(NQ_PREFIX+'units_'+code,nqUnitsCache,[]);}
-function setNqCustomUnits(code,units){localStorage.setItem(NQ_PREFIX+'units_'+code,JSON.stringify(units));nqUnitsCache.set(NQ_PREFIX+'units_'+code,units);clearNewProductTotals(code);}
+function setNqCustomUnits(code,units){clearRedoStack();localStorage.setItem(NQ_PREFIX+'units_'+code,JSON.stringify(units));nqUnitsCache.set(NQ_PREFIX+'units_'+code,units);clearNewProductTotals(code);}
 function removeNqCustomUnit(code,customIndex,defaultUnitCount){
   const units=getNqCustomUnits(code);
   if(customIndex<0||customIndex>=units.length)return false;
@@ -837,52 +845,101 @@ function rnd(v,s){ return Math.round((v+Number.EPSILON)*100)/100; }
    UNDO
 ═══════════════════════════════════════ */
 const UNDO_KEY = '__undo_stack__';
+const REDO_KEY = '__redo_stack__';
 const MAX_UNDO = 10;
 function getAppDataKeys(){
   const keys=[];
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
-    if(k && (k.startsWith('inv_')||k.startsWith('cu_')||k.startsWith('cprods_')||k.startsWith('nq_'))) keys.push(k);
+    if(k&&(k.startsWith('inv_')||k.startsWith('cu_')||k.startsWith('cprods_')||k.startsWith('nq_')))keys.push(k);
   }
   return keys;
 }
-function snapshotAppData(){ const snap={}; getAppDataKeys().forEach(k=>{ snap[k]=localStorage.getItem(k); }); return snap; }
-function pushUndoSnapshot(label){
+function readHistoryStack(key){
+  try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[];}
+  catch(e){return [];}
+}
+function snapshotAppData(){const snap={};getAppDataKeys().forEach(k=>{snap[k]=localStorage.getItem(k);});return snap;}
+function clearRedoStack(){
   try{
-    const stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]');
-    stack.push({label:label||'', data:snapshotAppData()});
-    while(stack.length>MAX_UNDO) stack.shift();
-    localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
-  }catch(e){ console.error('undo snapshot', e); }
+    if(localStorage.getItem(REDO_KEY)!==null){
+      localStorage.removeItem(REDO_KEY);
+      updateUndoButton();
+    }
+  }catch(e){console.warn('Не удалось очистить историю возврата',e);}
+}
+function pushUndoSnapshot(label){
+  clearRedoStack();
+  try{
+    const stack=readHistoryStack(UNDO_KEY);
+    stack.push({label:label||'',data:snapshotAppData()});
+    while(stack.length>MAX_UNDO)stack.shift();
+    localStorage.setItem(UNDO_KEY,JSON.stringify(stack));
+  }catch(e){console.error('undo snapshot',e);}
   updateUndoButton();
+}
+function restoreAppData(data){
+  getAppDataKeys().forEach(k=>localStorage.removeItem(k));
+  Object.keys(data||{}).forEach(k=>localStorage.setItem(k,data[k]));
+  clearInventoryValueCaches();
+  renderLocStrip();renderStats();renderCategoryStrip();renderProducts();updateNavBadge();
+  document.getElementById('addProductFormWrap').innerHTML='';
+  if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
 }
 function undoLastAction(){
-  let stack;
-  try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
-  if(!stack.length){ toast('Нечего отменять'); return; }
+  const stack=readHistoryStack(UNDO_KEY);
+  if(!stack.length){toast('Нечего отменять');return;}
+  const last=stack[stack.length-1];
+  const label=last.label||'последнее действие';
+  showConfirm('Точно отменить последнее действие?\n\nДействие: '+label,performUndoLastAction,'Да, отменить');
+}
+function performUndoLastAction(){
+  const stack=readHistoryStack(UNDO_KEY);
+  if(!stack.length){toast('Нечего отменять');updateUndoButton();return;}
   const last=stack.pop();
-  localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
-  getAppDataKeys().forEach(k=>localStorage.removeItem(k));
-  Object.keys(last.data).forEach(k=>localStorage.setItem(k,last.data[k]));
-  clearInventoryValueCaches();
-  renderLocStrip(); renderStats(); renderCategoryStrip(); renderProducts(); updateNavBadge();
-  document.getElementById('addProductFormWrap').innerHTML='';
-  if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
+  const redo=readHistoryStack(REDO_KEY);
+  redo.push({label:last.label||'',data:snapshotAppData()});
+  while(redo.length>MAX_UNDO)redo.shift();
+  localStorage.setItem(UNDO_KEY,JSON.stringify(stack));
+  localStorage.setItem(REDO_KEY,JSON.stringify(redo));
+  restoreAppData(last.data);
   updateUndoButton();
-  toast(last.label ? `↩️ Отменено: ${last.label}` : '↩️ Действие отменено');
+  toast(last.label?'↩️ Отменено: '+last.label:'↩️ Действие отменено');
+}
+function redoLastAction(){
+  const redo=readHistoryStack(REDO_KEY);
+  if(!redo.length){toast('Нечего возвращать');return;}
+  const last=redo.pop();
+  const undo=readHistoryStack(UNDO_KEY);
+  undo.push({label:'Повтор: '+(last.label||'последнего действия'),data:snapshotAppData()});
+  while(undo.length>MAX_UNDO)undo.shift();
+  localStorage.setItem(UNDO_KEY,JSON.stringify(undo));
+  localStorage.setItem(REDO_KEY,JSON.stringify(redo));
+  restoreAppData(last.data);
+  updateUndoButton();
+  toast(last.label?'↪️ Возвращено: '+last.label:'↪️ Действие возвращено');
 }
 function updateUndoButton(){
-  let stack;
-  try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
+  const undo=readHistoryStack(UNDO_KEY);
+  const redo=readHistoryStack(REDO_KEY);
   const btn=document.getElementById('undoBtn');
+  const redoBtn=document.getElementById('redoBtn');
   const badge=document.getElementById('undoBadge');
-  if(!btn) return;
-  btn.disabled = stack.length===0;
+  if(!btn)return;
+  btn.disabled=undo.length===0;
+  btn.title=undo.length?'Отменить: '+(undo[undo.length-1].label||'последнее действие'):'Отменить последнее действие';
+  btn.setAttribute('aria-label',btn.title);
+  if(redoBtn){
+    redoBtn.disabled=redo.length===0;
+    redoBtn.title=redo.length?'Вернуть как было: '+(redo[redo.length-1].label||'отменённое действие'):'Вернуть как было';
+    redoBtn.setAttribute('aria-label',redoBtn.title);
+  }
   if(badge){
-    if(stack.length>0){ badge.style.display='flex'; badge.textContent=stack.length; }
+    if(undo.length>0){badge.style.display='flex';badge.textContent=undo.length;}
     else badge.style.display='none';
   }
 }
+
 
 /* ═══════════════════════════════════════
    TOAST / CONFIRM
@@ -893,13 +950,15 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'),2200);
 }
 let _confirmCallback=null;
-function showConfirm(msg,onOk){
+function showConfirm(msg,onOk,okLabel){
   document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmOkBtn').textContent=okLabel||'Да, удалить';
   document.getElementById('confirmOverlay').classList.add('show');
   _confirmCallback=onOk;
 }
 function hideConfirm(){
   document.getElementById('confirmOverlay').classList.remove('show');
+  document.getElementById('confirmOkBtn').textContent='Да, удалить';
   _confirmCallback=null;
 }
 
@@ -1847,99 +1906,123 @@ function showAddProductForm(){
 /* ═══════════════════════════════════════
    SUMMARY
 ═══════════════════════════════════════ */
-function renderSummary(){
+function getSummaryRows(){
   const allRows=[];
-  const mappedOldIds = new Set(Object.values(OLD_TO_EXCEL));
-
-  // 1. Строго по NOMENCLATURE
+  const mappedOldIds=new Set(Object.values(OLD_TO_EXCEL));
   NOMENCLATURE.forEach(n=>{
-    const oldId = OLD_TO_EXCEL[n.code];
-    if (oldId) {
-      const p = stdProducts.find(x=>x.id===oldId);
-      if (!p) return;
-      const total = locations.reduce((s,loc)=>s+getOldLocTotal(loc,oldId),0);
-      const display = fmt(p.baseUnit, total);
-      const detail = locations.filter(loc=>getOldLocs(oldId).includes(loc))
-        .map(loc=>{ 
-          const v = fmt(p.baseUnit, getOldLocTotal(loc,oldId)); 
-          return v > 0 ? `${loc}: ${v}` : null; 
-        })
+    const oldId=OLD_TO_EXCEL[n.code];
+    if(oldId){
+      const p=stdProducts.find(x=>x.id===oldId);
+      if(!p)return;
+      const total=locations.reduce((sum,loc)=>sum+getOldLocTotal(loc,oldId),0);
+      const display=fmt(p.baseUnit,total);
+      const detail=locations.filter(loc=>getOldLocs(oldId).includes(loc))
+        .map(loc=>{const value=fmt(p.baseUnit,getOldLocTotal(loc,oldId));return value>0?`${loc}: ${value}`:null;})
         .filter(Boolean).join('\n');
-      allRows.push({pid: oldId, name: n.name, unit: p.baseUnit, total: display, detail, isCustom: false, isOld: true, group:n.group});
-    } else {
-      const total = locations.reduce((s,loc)=>s+getNewLocTotal(loc,n.code),0);
-      const display = fmt(n.unit, total);
-      const detail = locations.filter(loc=>getNqLocs(n.code).includes(loc) && getNewLocTotal(loc,n.code)>0)
+      allRows.push({pid:oldId,name:n.name,unit:p.baseUnit,total:display,detail,isCustom:false,isOld:true,group:n.group});
+    }else{
+      const total=locations.reduce((sum,loc)=>sum+getNewLocTotal(loc,n.code),0);
+      const display=fmt(n.unit,total);
+      const detail=locations.filter(loc=>getNqLocs(n.code).includes(loc)&&getNewLocTotal(loc,n.code)>0)
         .map(loc=>`${loc}: ${fmt(n.unit,getNewLocTotal(loc,n.code))}`)
         .join('\n');
-      allRows.push({pid: n.code, name: n.name, unit: n.unit, total: display, detail, isCustom: false, isOld: false, group:n.group});
+      allRows.push({pid:n.code,name:n.name,unit:n.unit,total:display,detail,isCustom:false,isOld:false,group:n.group});
     }
   });
-
-  // 2. Хвост (пиво, кеги)
   stdProducts.forEach(p=>{
-    if (mappedOldIds.has(p.id)) return;
-    const total = locations.reduce((s,loc)=>s+getOldLocTotal(loc,p.id),0);
-    const display = fmt(p.baseUnit, total);
-    const detail = locations.filter(loc=>getOldLocs(p.id).includes(loc))
-      .map(loc=>{ 
-        const v = fmt(p.baseUnit, getOldLocTotal(loc,p.id)); 
-        return v > 0 ? `${loc}: ${v}` : null; 
-      })
+    if(mappedOldIds.has(p.id))return;
+    const total=locations.reduce((sum,loc)=>sum+getOldLocTotal(loc,p.id),0);
+    const display=fmt(p.baseUnit,total);
+    const detail=locations.filter(loc=>getOldLocs(p.id).includes(loc))
+      .map(loc=>{const value=fmt(p.baseUnit,getOldLocTotal(loc,p.id));return value>0?`${loc}: ${value}`:null;})
       .filter(Boolean).join('\n');
-    allRows.push({pid: p.id, name: p.name, unit: p.baseUnit, total: display, detail, isCustom: false, isOld: true, group:({chicken:'meat',potato:'veg',mixes:'sauce',pantry:'pantry',beer:'drinks',containers:'pack'})[productCategory(p.id)]||'pantry'});
+    allRows.push({pid:p.id,name:p.name,unit:p.baseUnit,total:display,detail,isCustom:false,isOld:true,group:({chicken:'meat',potato:'veg',mixes:'sauce',pantry:'pantry',beer:'drinks',containers:'pack'})[productCategory(p.id)]||'pantry'});
   });
-
-  // 3. Кастомные
-  const seenCp = new Set();
+  const seenCustom=new Set();
   locations.forEach(loc=>{
     getCustomProducts(loc).forEach(cp=>{
-      if (seenCp.has(cp.id)) return;
-      seenCp.add(cp.id);
-      const total = getOldLocTotal(loc, cp.id);
-      const display = fmt(cp.baseUnit, total);
-      allRows.push({pid: cp.id, name: cp.name, unit: cp.baseUnit, total: display, detail: loc, isCustom: true, isOld: false, group:cp.group||'pantry'});
+      if(seenCustom.has(cp.id))return;
+      seenCustom.add(cp.id);
+      allRows.push({pid:cp.id,name:cp.name,unit:cp.baseUnit,total:fmt(cp.baseUnit,getOldLocTotal(loc,cp.id)),detail:loc,isCustom:true,isOld:false,group:cp.group||'pantry'});
     });
   });
-
   const groupOrder=Object.keys(NOMENCLATURE_GROUPS);
-  allRows.sort((a,b)=>{const ga=groupOrder.indexOf(a.group),gb=groupOrder.indexOf(b.group);const ca=ga<0?groupOrder.length:ga,cb=gb<0?groupOrder.length:gb;return ca-cb||a.name.localeCompare(b.name,'ru');});
-  const filled = allRows.filter(r=>r.total>0).length;
+  allRows.sort((a,b)=>{
+    const ga=groupOrder.indexOf(a.group),gb=groupOrder.indexOf(b.group);
+    const ca=ga<0?groupOrder.length:ga,cb=gb<0?groupOrder.length:gb;
+    return ca-cb||a.name.localeCompare(b.name,'ru');
+  });
+  return allRows;
+}
+function renderSummary(){
+  const allRows=getSummaryRows();
+  const filled=allRows.filter(row=>row.total>0).length;
   document.getElementById('summaryStats').innerHTML=`
     <div class="ss-card"><div class="ss-val">${allRows.length}</div><div class="ss-lbl">Всего позиций</div></div>
     <div class="ss-card"><div class="ss-val green">${filled}</div><div class="ss-lbl">Заполнено</div></div>
     <div class="ss-card"><div class="ss-val blue">${allRows.length?Math.round(filled/allRows.length*100):0}%</div><div class="ss-lbl">Готовность</div></div>
     <div class="ss-card"><div class="ss-val">${allRows.length-filled}</div><div class="ss-lbl">Пустых</div></div>`;
-
-  let rows = allRows;
-  if (searchQ) rows = rows.filter(r => r.name.toLowerCase().includes(searchQ.toLowerCase()));
-  if (filterOnlyFilled) rows = rows.filter(r => r.total > 0);
-
-  const list = document.getElementById('summaryList');
+  let rows=allRows;
+  if(searchQ)rows=rows.filter(row=>row.name.toLowerCase().includes(searchQ.toLowerCase()));
+  if(filterOnlyFilled)rows=rows.filter(row=>row.total>0);
+  const list=document.getElementById('summaryList');
   list.innerHTML='';
-  if (rows.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="ei">🔍</div><p>Ничего не найдено</p></div>`;
-    return;
-  }
-
-  rows.forEach(r => {
-    const item = document.createElement('div');
-    item.className = 'sum-item' + (r.total===0 ? ' zero' : '') + (r.isCustom ? ' custom' : '');
-    item.innerHTML = `
+  if(rows.length===0){list.innerHTML=`<div class="empty-state"><div class="ei">🔍</div><p>Ничего не найдено</p></div>`;return;}
+  rows.forEach(row=>{
+    const item=document.createElement('div');
+    item.className='sum-item'+(row.total===0?' zero':'')+(row.isCustom?' custom':'');
+    item.innerHTML=`
       <div class="sum-item-left">
         <div class="sum-item-name">
-          ${r.name}
-          ${r.isCustom ? ' <span style="font-size:10px;color:var(--warning);background:var(--warning-subtle);padding:1px 6px;border-radius:10px;font-weight:700;">свой</span>' : ''}
-          ${r.isOld ? ' <span style="font-size:10px;color:var(--text-tertiary);background:var(--border-light);padding:1px 6px;border-radius:10px;font-weight:700;">старая</span>' : ''}
+          ${row.name}
+          ${row.isCustom?' <span style="font-size:10px;color:var(--warning);background:var(--warning-subtle);padding:1px 6px;border-radius:10px;font-weight:700;">свой</span>':''}
+          ${row.isOld?' <span style="font-size:10px;color:var(--text-tertiary);background:var(--border-light);padding:1px 6px;border-radius:10px;font-weight:700;">старая</span>':''}
         </div>
-        ${r.detail ? `<div class="sum-item-detail">${r.detail.replace(/\n/g,'<br>')}</div>` : ''}
+        ${row.detail?`<div class="sum-item-detail">${row.detail.replace(/\n/g,'<br>')}</div>`:''}
       </div>
       <div class="sum-item-right">
-        <div class="sum-item-val ${r.total===0 ? 'zero' : ''}">${r.total}</div>
-        <div class="sum-item-unit">${r.unit}</div>
+        <div class="sum-item-val ${row.total===0?'zero':''}">${row.total}</div>
+        <div class="sum-item-unit">${row.unit}</div>
       </div>`;
     list.appendChild(item);
   });
+}
+function openInventorySummaryEmail(){
+  const rows=getSummaryRows();
+  const safeCell=value=>{
+    let text=String(value??'').replace(/[\r\n]+/g,' ').trim();
+    if(/^[=+@-]/.test(text))text="'"+text;
+    return '"'+text.replace(/"/g,'""')+'"';
+  };
+  const d=new Date();
+  const date=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+  const subject='Итоги полной инвентаризации ТМЦ — '+d.toLocaleDateString('ru-RU');
+  const csv='\uFEFF'+[
+    ['Наименование продукта','Количество по факту'].map(safeCell).join(';'),
+    ...rows.map(row=>{
+      const quantity=Number(row.total).toLocaleString('ru-RU',{useGrouping:false,maximumFractionDigits:2});
+      return [safeCell(row.name),safeCell(quantity)].join(';');
+    })
+  ].join('\r\n');
+  const file=new File([csv],'itogi-polnoi-inventarizacii-tmc-'+date+'.csv',{type:'text/csv;charset=utf-8'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:subject,text:'Итоги полной инвентаризации. CSV-файл содержит все позиции и фактические количества.'}).catch(error=>{
+      if(error.name!=='AbortError')downloadInventoryCsv(file);
+    });
+    return;
+  }
+  downloadInventoryCsv(file);
+}
+function downloadInventoryCsv(file){
+  const url=URL.createObjectURL(file);
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=file.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('CSV-файл скачан. Прикрепи его к письму вручную.');
 }
 
 /* ═══════════════════════════════════════
@@ -2063,6 +2146,8 @@ function init(){
     },100);
   };
   document.getElementById('undoBtn').onclick=undoLastAction;
+  document.getElementById('redoBtn').onclick=redoLastAction;
+  document.getElementById('emailSummaryBtn').onclick=openInventorySummaryEmail;
 
   document.getElementById('confirmOkBtn').onclick=()=>{
     const cb=_confirmCallback;
