@@ -134,6 +134,7 @@
             flex-shrink: 0;
         }
         .header-undo-btn,
+        .header-redo-btn,
         .header-reset-btn {
             position: relative;
             display: flex;
@@ -150,11 +151,13 @@
             transition: background-color var(--ease), color var(--ease);
         }
         .header-undo-btn:hover:not(:disabled),
+        .header-redo-btn:hover:not(:disabled),
         .header-reset-btn:hover {
             background: var(--border-light);
             color: var(--text-primary);
         }
-        .header-undo-btn:active:not(:disabled) {
+        .header-undo-btn:active:not(:disabled),
+        .header-redo-btn:active:not(:disabled) {
             background: var(--accent-subtle);
             color: var(--accent);
         }
@@ -162,11 +165,13 @@
             background: var(--danger-subtle);
             color: var(--danger);
         }
-        .header-undo-btn:disabled {
+        .header-undo-btn:disabled,
+        .header-redo-btn:disabled {
             opacity: 0.35;
             cursor: not-allowed;
         }
         .header-undo-btn:focus-visible,
+        .header-redo-btn:focus-visible,
         .header-reset-btn:focus-visible,
         .nav-btn:focus-visible,
         .scroll-top-fab:focus-visible {
@@ -788,6 +793,7 @@
             box-shadow: var(--shadow-lg);
         }
         .confirm-msg {
+            white-space: pre-line;
             font-size: 15px;
             font-weight: 500;
             color: var(--text-primary);
@@ -885,6 +891,12 @@
                 <path d="M4.5 10a5.5 5.5 0 1 0 1.1-3.3L3.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             <span class="undo-badge" id="undoBadge" style="display:none;"></span>
+        </button>
+        <button class="header-redo-btn" id="redoBtn" type="button" title="Вернуть как было" aria-label="Вернуть как было" disabled>
+            <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M13.5 7h3.0V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M15.5 10a5.5 5.5 0 1 1-1.1-3.3L16.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </button>
         <button class="header-reset-btn" id="hardResetBtn" type="button" title="Полный сброс" aria-label="Полный сброс">
             <svg class="icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -1184,11 +1196,11 @@
        STORAGE — инвентаризация
     ════════════════════════════════ */
     function getRows(loc,pid,uIdx){const r=localStorage.getItem(`inv_${loc}_${pid}_${uIdx}`);return r?JSON.parse(r):[null];}
-    function setRows(loc,pid,uIdx,rows){localStorage.setItem(`inv_${loc}_${pid}_${uIdx}`,JSON.stringify(rows));}
+    function setRows(loc,pid,uIdx,rows){clearRedoStack();localStorage.setItem(`inv_${loc}_${pid}_${uIdx}`,JSON.stringify(rows));}
     function getCU(loc,pid){const r=localStorage.getItem(`cu_${loc}_${pid}`);return r?JSON.parse(r):[];}
-    function setCU(loc,pid,cu){localStorage.setItem(`cu_${loc}_${pid}`,JSON.stringify(cu));}
+    function setCU(loc,pid,cu){clearRedoStack();localStorage.setItem(`cu_${loc}_${pid}`,JSON.stringify(cu));}
     function getCustomProducts(loc){const r=localStorage.getItem(`cprods_${loc}`);return r?JSON.parse(r):[];}
-    function setCustomProducts(loc,arr){localStorage.setItem(`cprods_${loc}`,JSON.stringify(arr));}
+    function setCustomProducts(loc,arr){clearRedoStack();localStorage.setItem(`cprods_${loc}`,JSON.stringify(arr));}
     function genId(){return 'cp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
 
     /* ════════════════════════════════
@@ -1219,14 +1231,14 @@
             ]
         };
     }
-    function saveDsData(data){ localStorage.setItem('ds_data', JSON.stringify(data)); }
+    function saveDsData(data){ clearRedoStack();localStorage.setItem('ds_data', JSON.stringify(data)); }
 
     /* ════════════════════════════════
        UNDO — универсальный откат последних действий
     ════════════════════════════════ */
     const UNDO_KEY = '__undo_stack__';
+    const REDO_KEY = '__redo_stack__';
     const MAX_UNDO = 10;
-
     function getAppDataKeys(){
         const keys=[];
         for(let i=0;i<localStorage.length;i++){
@@ -1235,47 +1247,91 @@
         }
         return keys;
     }
+    function readHistoryStack(key){
+        try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[];}
+        catch(e){return [];}
+    }
     function snapshotAppData(){
         const snap={};
         getAppDataKeys().forEach(k=>{snap[k]=localStorage.getItem(k);});
         return snap;
     }
-    function pushUndoSnapshot(label){
+    function clearRedoStack(){
         try{
-            const stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]');
-            stack.push({label:label||'', data:snapshotAppData()});
-            while(stack.length>MAX_UNDO) stack.shift();
-            localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
-        }catch(e){ console.error('Не удалось сохранить снимок для отмены', e); }
+            if(localStorage.getItem(REDO_KEY)!==null){
+                localStorage.removeItem(REDO_KEY);
+                updateUndoButton();
+            }
+        }catch(e){console.warn('Не удалось очистить историю возврата',e);}
+    }
+    function pushUndoSnapshot(label){
+        clearRedoStack();
+        try{
+            const stack=readHistoryStack(UNDO_KEY);
+            stack.push({label:label||'',data:snapshotAppData()});
+            while(stack.length>MAX_UNDO)stack.shift();
+            localStorage.setItem(UNDO_KEY,JSON.stringify(stack));
+        }catch(e){console.error('Не удалось сохранить снимок для отмены',e);}
         updateUndoButton();
     }
-    function undoLastAction(){
-        let stack;
-        try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
-        if(!stack.length){ toast('Нечего отменять'); return; }
-        const last=stack.pop();
-        localStorage.setItem(UNDO_KEY, JSON.stringify(stack));
-
+    function restoreAppData(data){
         getAppDataKeys().forEach(k=>localStorage.removeItem(k));
-        Object.keys(last.data).forEach(k=>localStorage.setItem(k,last.data[k]));
-
+        Object.keys(data||{}).forEach(k=>localStorage.setItem(k,data[k]));
         renderLocStrip(); renderStats(); renderProducts(); updateNavBadge();
         document.getElementById('addProductFormWrap').innerHTML='';
-        if(document.getElementById('tabSummary').classList.contains('active')) renderSummary();
-        if(document.getElementById('tabDs').classList.contains('active')) renderDs();
-
+        if(document.getElementById('tabSummary').classList.contains('active'))renderSummary();
+        if(document.getElementById('tabDs').classList.contains('active'))renderDs();
+    }
+    function undoLastAction(){
+        const stack=readHistoryStack(UNDO_KEY);
+        if(!stack.length){toast('Нечего отменять');return;}
+        const last=stack[stack.length-1];
+        const label=last.label||'последнее действие';
+        showConfirm('Точно отменить последнее действие?\n\nДействие: '+label,performUndoLastAction,'Да, отменить');
+    }
+    function performUndoLastAction(){
+        const stack=readHistoryStack(UNDO_KEY);
+        if(!stack.length){toast('Нечего отменять');updateUndoButton();return;}
+        const last=stack.pop();
+        const redo=readHistoryStack(REDO_KEY);
+        redo.push({label:last.label||'',data:snapshotAppData()});
+        while(redo.length>MAX_UNDO)redo.shift();
+        localStorage.setItem(UNDO_KEY,JSON.stringify(stack));
+        localStorage.setItem(REDO_KEY,JSON.stringify(redo));
+        restoreAppData(last.data);
         updateUndoButton();
-        toast(last.label ? `↩️ Отменено: ${last.label}` : '↩️ Действие отменено');
+        toast(last.label?'↩️ Отменено: '+last.label:'↩️ Действие отменено');
+    }
+    function redoLastAction(){
+        const redo=readHistoryStack(REDO_KEY);
+        if(!redo.length){toast('Нечего возвращать');return;}
+        const last=redo.pop();
+        const undo=readHistoryStack(UNDO_KEY);
+        undo.push({label:'Повтор: '+(last.label||'последнего действия'),data:snapshotAppData()});
+        while(undo.length>MAX_UNDO)undo.shift();
+        localStorage.setItem(UNDO_KEY,JSON.stringify(undo));
+        localStorage.setItem(REDO_KEY,JSON.stringify(redo));
+        restoreAppData(last.data);
+        updateUndoButton();
+        toast(last.label?'↪️ Возвращено: '+last.label:'↪️ Действие возвращено');
     }
     function updateUndoButton(){
-        let stack;
-        try{ stack=JSON.parse(localStorage.getItem(UNDO_KEY)||'[]'); }catch(e){ stack=[]; }
+        const undo=readHistoryStack(UNDO_KEY);
+        const redo=readHistoryStack(REDO_KEY);
         const btn=document.getElementById('undoBtn');
+        const redoBtn=document.getElementById('redoBtn');
         const badge=document.getElementById('undoBadge');
         if(!btn)return;
-        btn.disabled = stack.length===0;
+        btn.disabled=undo.length===0;
+        btn.title=undo.length?'Отменить: '+(undo[undo.length-1].label||'последнее действие'):'Отменить последнее действие';
+        btn.setAttribute('aria-label',btn.title);
+        if(redoBtn){
+            redoBtn.disabled=redo.length===0;
+            redoBtn.title=redo.length?'Вернуть как было: '+(redo[redo.length-1].label||'отменённое действие'):'Вернуть как было';
+            redoBtn.setAttribute('aria-label',redoBtn.title);
+        }
         if(badge){
-            if(stack.length>0){ badge.style.display='flex'; badge.textContent=stack.length; }
+            if(undo.length>0){badge.style.display='flex';badge.textContent=undo.length;}
             else badge.style.display='none';
         }
     }
@@ -1356,13 +1412,15 @@
        ПОДТВЕРЖДЕНИЕ (замена нативного confirm)
     ════════════════════════════════ */
     let _confirmCallback=null;
-    function showConfirm(msg,onOk){
+    function showConfirm(msg,onOk,okLabel){
         document.getElementById('confirmMsg').textContent=msg;
+        document.getElementById('confirmOkBtn').textContent=okLabel||'Да, удалить';
         document.getElementById('confirmOverlay').classList.add('show');
         _confirmCallback=onOk;
     }
     function hideConfirm(){
         document.getElementById('confirmOverlay').classList.remove('show');
+        document.getElementById('confirmOkBtn').textContent='Да, удалить';
         _confirmCallback=null;
     }
 
@@ -2669,6 +2727,7 @@ function updateNomTotal(n){
         document.getElementById('addAvtoBtn').onclick=addAvto;
         document.getElementById('dsClearBtn').onclick=clearDs;
         document.getElementById('undoBtn').onclick=undoLastAction;
+        document.getElementById('redoBtn').onclick=redoLastAction;
         document.getElementById('emailSummaryBtn').onclick=openAuditSummaryEmail;
         document.getElementById('cashBookInput').addEventListener('input',e=>{
             const ds=getDsData(); ds.cashBook=e.target.value; saveDsData(ds); updateGrandTotal();
