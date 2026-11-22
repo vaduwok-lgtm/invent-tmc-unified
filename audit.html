@@ -2747,6 +2747,7 @@ function updateNomTotal(n){
         document.getElementById('searchInput').oninput=e=>{
             searchQ=e.target.value; renderSummary();
         };
+        enableSearchEnterDismiss(document.getElementById('searchInput'));
 
         const btnAll=document.getElementById('filterAllBtn');
         const btnFilled=document.getElementById('filterFilledBtn');
