@@ -2213,6 +2213,16 @@ function init(){
     btn.onclick=()=>switchTab(btn.dataset.tab);
   });
 
+
+function enableSearchEnterDismiss(input){
+  input.addEventListener('keydown',e=>{
+    if((e.key==='Enter'||e.keyCode===13)&&!e.isComposing){
+      e.preventDefault();
+      input.blur();
+    }
+  });
+}
+
   const invSearch=document.getElementById('invSearchInput');
   const invClear=document.getElementById('invSearchClear');
   invSearch.oninput=e=>{
@@ -2220,13 +2230,16 @@ function init(){
     invClear.classList.toggle('visible', invSearchQ.length>0);
     renderProducts();
   };
+  enableSearchEnterDismiss(invSearch);
   invClear.onclick=()=>{
     invSearchQ=''; invSearch.value='';
     invClear.classList.remove('visible');
     renderProducts();
   };
 
-  document.getElementById('searchInput').oninput=e=>{ searchQ=e.target.value; renderSummary(); };
+  const summarySearch=document.getElementById('searchInput');
+  summarySearch.oninput=e=>{ searchQ=e.target.value; renderSummary(); };
+  enableSearchEnterDismiss(summarySearch);
 
   const btnAll=document.getElementById('filterAllBtn');
   const btnFilled=document.getElementById('filterFilledBtn');
